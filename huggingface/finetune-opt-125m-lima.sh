@@ -30,10 +30,10 @@
 #BSUB -o gpu_%J.out
 #BSUB -e gpu_%J.err
 
+source $HOME/miniconda3/bin/activate
 
 module load cuda/12.1
 module load cudnn/v8.9.1.23-prod-cuda-12.X
-source $HOME/miniconda3/bin/activate
 conda activate msc
 export CUDA_LAUNCH_BLOCKING=1
 
