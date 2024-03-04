@@ -68,7 +68,7 @@ len_train_split = len(train_split)
 #if test: train_split = code_test_ds
 
 # Define training args
-class ExampleCallback(WandbCallback):
+class ExampleCallback(WandbCallback):   # Source: https://docs.wandb.ai/guides/integrations/huggingface#custom-logging-log-and-view-evaluation-samples-during-training
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.text_table = wandb.Table(columns=["prompt", "suggested completion", "completion", "raw_completion"])
@@ -76,14 +76,16 @@ class ExampleCallback(WandbCallback):
     def on_log(self, args, state, control, logs=None, **kwargs):
         model = kwargs["model"]
         tokenizer = kwargs["tokenizer"]
+        # print(kwargs.keys())   # Kwargs contains keys: ['model', 'tokenizer', 'optimizer', 'lr_scheduler', 'train_dataloader', 'eval_dataloader']
 
         #prompt = eval_ds[np.random.randint(len_eval)][0]
-        example = train_split[np.random.randint(len_train_split)]
+        #train_dataloader = kwargs["train_dataloader"]   # The train_dataloader always picks the same order...
+        example = train_split[np.random.randint(len_train_split)]   # Maybe I should use the dataloader and DataCollator instead???
         text = example["text"]
         prompt, suggested_completion = text.split(response_template)
         prompt = f"{prompt}{response_template} "
         tokenized_prompt = tokenizer.encode(prompt, return_tensors="pt")  # Why is this not a dictionary???
-        tokenized_completion = model.generate(tokenized_prompt.cuda(), max_new_tokens=1024)
+        tokenized_completion = model.generate(tokenized_prompt.cuda(), max_new_tokens=256 if test else 1024)
         completion = tokenizer.decode(token_ids=tokenized_completion.squeeze(0), skip_special_tokens=True)
         raw_completion = completion
         
@@ -117,7 +119,9 @@ trainer = SFTTrainer(
     dataset_text_field="text",
     train_dataset=train_split, #train_ds,
     eval_dataset=val_split,
-    max_seq_length=2048,   # It seems like the UserWarning with not being able to find the instruction and response templates were fixed when doubling max_seq_length and changing the template slightly....
+    max_seq_length=256 if test else 2048,   # It seems like the UserWarning with not being able to find the instruction and response templates were fixed when doubling max_seq_length and changing the template slightly....
     callbacks=[ExampleCallback],
 )
 trainer.train()
+
+# Set max_seq_length=2048 both in trainer and in callback (in callback maybe just 1024...)
