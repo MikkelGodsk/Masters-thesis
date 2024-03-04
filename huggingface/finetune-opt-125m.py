@@ -26,6 +26,8 @@ test = False    # Flag for whether we are testing the code or not. If true, we p
 os.environ['WANDB_PROJECT'] = 'lima_ft'
 os.environ['WANDB_DIR'] = '/work3/s184399/logs/wandb'
 os.environ['WANDB_CACHE_DIR'] = '/work3/s184399/cache_dir/wandb'
+checkpoint_dir = "/work3/s184399/checkpoints/lima-opt-125m"
+logging_dir = "/work3/s184399/logs/lima-opt-125m"
 
 model_name = "facebook/opt-125m"   # Small enough to do fairly fast generation on CPU (0.8s per small sentence) => Might be good for development, debugging and testing...
 dataset_name = "GAIR/lima"
@@ -105,8 +107,8 @@ training_args = TrainingArguments(
     gradient_checkpointing=True,
     logging_steps=25,
     do_train=True,
-    output_dir="/work3/s184399/checkpoints/lima-opt-125m",
-    logging_dir="/work3/s184399/logs/lima-opt-125m",
+    output_dir=checkpoint_dir,
+    logging_dir=logging_dir,
     overwrite_output_dir=True,
     report_to="wandb",
     run_name="opt-125m code test" if test else "finetune-opt-125m",
