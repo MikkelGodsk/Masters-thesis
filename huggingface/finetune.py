@@ -10,7 +10,7 @@ import numpy as np
 import os
 from time import time
 
-from profiler_callbacks import ProfilerCallback, MemoryHistoryCallback
+from profiler_callbacks import TorchProfilerCallback, MemoryHistoryCallback
 from lima_utils import *
 
 """
@@ -28,6 +28,7 @@ TODO:  Reproduce LIMA experiment &
 """
 
 test = False    # Flag for whether we are testing the code or not. If true, we pass a single batch and overfit to that...
+n_test_batches = 10  # E.g.: Can we overfit to a single batch? (For testing/debugging purposes). We should be able to if the model is set up correctly...
 
 model_name = "facebook/opt-125m"
 dataset_name = "GAIR/lima"
@@ -56,13 +57,13 @@ collator = DataCollatorForCompletionOnlyLM(instruction_template=instruction_temp
 
 ds = load_dataset(dataset_name, 'plain_text', cache_dir=cache_dir)
 train_ds = process_ds(ds["train"])
-if test: train_ds = Dataset.from_dict(train_ds[0:1])  # Can we overfit to a single batch? (For testing/debugging purposes)
+if test: train_ds = Dataset.from_dict(train_ds[0:n_test_batches])
 eval_ds = ds["test"]["conversations"]
 len_eval = len(eval_ds)
 len_train_ds = len(train_ds)
 
 training_args = TrainingArguments(
-    num_train_epochs=1,
+    num_train_epochs=100 if test else 1,
     per_device_train_batch_size=1,
     lr_scheduler_type="cosine",
     gradient_accumulation_steps=1,
@@ -83,11 +84,11 @@ trainer = SFTTrainer(
     data_collator=collator,
     dataset_text_field="text",
     train_dataset=train_ds,
-    max_seq_length=256,   # My PC can handle this with OPT-125m !!!   # It seems like the UserWarning with not being able to find the instruction and response templates were fixed when setting max_seq_length=2048....
+    max_seq_length=2048,   # My PC can handle max_seq_length=256 with OPT-125m !!!   # It seems like the UserWarning with not being able to find the instruction and response templates were fixed when setting max_seq_length=2048....
     callbacks=[
-        ProfilerCallback(logging_dir, profile_epochs=[0], profile_n_steps=3, upload_to_wandb=True), 
-        ExampleCallback(train_ds, eval_ds, max_new_tokens=128), 
-        MemoryHistoryCallback(profile_epochs=[0], profile_n_steps=3)
+        TorchProfilerCallback(logging_dir, profile_epochs=[0], profile_n_steps=5, upload_to_wandb=False), 
+        MemoryHistoryCallback(logging_dir, profile_epochs=[0], profile_n_steps=5),
+        ExampleCallback(train_ds, eval_ds, max_new_tokens=1024), 
     ],
 )
 trainer.train()
