@@ -2,6 +2,7 @@ import os
 import torch
 from pickle import dump
 import html2image  # pip install --upgrade html2image
+import time
 from datetime import datetime
 from transformers.trainer_callback import TrainerControl, TrainerState
 from transformers.training_args import TrainingArguments
@@ -34,13 +35,26 @@ def extract_png_from_html(html_content: str):
 
 class ProfilerCallback(TrainerCallback):
     """
-    Sources: https://pytorch.org/tutorials/recipes/recipes/profiler.html
+    This callback logs the PyTorch profiler data for a given epoch.
+    To open the profiler stack trace data in Chrome, go to chrome://tracing and drag in the JSON file.
+    To open the memory timeline, open the HTML file in a browser or view it in W&B.
+
+    How to use with Hugging Face Trainer:
+    ```
+    trainer = SFTTrainer(
+        ...
+        callbacks=[
+            ProfilerCallback(logging_dir, profile_epoch=1, upload_to_wandb=True), 
+        ],
+    )
+    ```
+
+    Docs: https://pytorch.org/tutorials/recipes/recipes/profiler.html
     and https://pytorch.org/docs/stable/profiler.html
-    
-    This callback logs the PyTorch profiler data to wandb.
-    Profiles an entire epoch.
+
+    For HuggingFace callbacks: https://huggingface.co/docs/transformers/main_classes/callback#transformers.TrainerCallback
     """
-    def __init__(self, logging_dir, profile_epoch=0, upload_to_wandb=True, *args, **kwargs):
+    def __init__(self, logging_dir: str, profile_epoch: int=0, upload_to_wandb: bool=True, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.profile_dir = os.path.join(logging_dir, "profile")
         os.makedirs(self.profile_dir, exist_ok=True)
@@ -75,31 +89,38 @@ class ProfilerCallback(TrainerCallback):
             self.profiler.stop()
             timestamp = get_timestamp()
             self.profiler.export_chrome_trace(os.path.join(self.profile_dir, f"stack_trace_{timestamp}.json"))
+            self.profiler.export_memory_timeline(os.path.join(self.profile_dir, f"memory_timeline_{timestamp}.json"))
             self.profiler.export_memory_timeline(os.path.join(self.profile_dir, f"memory_timeline_{timestamp}.html"))
             self.is_running = False
             if self.upload_to_wandb:
+                print("\nTaking a 5 second nap to let the file be written to disk before uploading to W&B")
+                time.sleep(5)  # Wait for the file to be written to disk
                 with open(os.path.join(self.profile_dir, f"memory_timeline_{timestamp}.html"), "r") as f:
                     html_content = f.read()
                 image = extract_png_from_html(html_content)
-                wandb.log({"embedded_png": wandb.Image(image)})
+                wandb.log({"Sample of memory timeline": wandb.Image(image)})
 
-    def on_epoch_begin(self, args, state, control, **kwargs):
+    def on_epoch_begin(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+        # Kwargs contains keys: ['model', 'tokenizer', 'optimizer', 'lr_scheduler', 'train_dataloader', 'eval_dataloader']
         if state.epoch == self.profile_epoch: 
             self.start()
 
-    def on_step_end(self, args, state, control, logs=None, **kwargs):
+    def on_step_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
         if state.epoch == self.profile_epoch:
             self.profiler.step()
 
-    def on_epoch_end(self, args, state, control, logs=None, **kwargs):
-        if state.epoch == self.profile_epoch:
+    def on_epoch_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+        if state.epoch == self.profile_epoch+1:
             self.stop()
 
-    def on_train_end(self, args, state, control, **kwargs):
+    def on_train_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
         self.stop()
 
 
 class MemoryHistoryCallback(TrainerCallback):   # Not sure if this one works.... Leaving it here as it might come in handy later...
+    """
+    To view the memory trace, go to https://pytorch.org/memory_viz and drag in the pickle file.
+    """
     def __init__(self, *args, profile_epoch=0, **kwargs):
         super().__init__(*args, **kwargs)
         self.profile_epoch = profile_epoch
