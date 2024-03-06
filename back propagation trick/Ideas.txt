@@ -1,0 +1,10 @@
+- Test with huggingface trainer... And accelerate... First things first.
+How does the memory footprint compare to that of the vanilla version?
+
+- Maybe, I could spawn a separate process to apply the gradients, as this seems to take a long time?
+Here I could probably use torch.multiprocessing, as this allows to spawn processes sharing memory!!!
+
+- Threads do not seem to work, due to Pythons GIL prohibiting truly concurrent execution of Python code...
+But the multiprocessing could maybe spawn a second process, which we could just use as a worker, which we can offload some of the computations to. Maybe even the gradient computation for the weight itself, so the main worker can just compute the error signals?
+
+- What if I just set require_grad=False for all the parameters, but then set require_grad=True for all activations? Then from those, I can compute the parameters (maybe within the optimizer itself?)
