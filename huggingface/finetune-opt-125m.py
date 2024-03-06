@@ -20,19 +20,26 @@ TODO:  Reproduce LIMA experiment &
 - CPU off loading
 - PEFT
 """
-
-test = False    # Flag for whether we are testing the code or not. If true, we pass a single batch and overfit to that...
-
-os.environ['WANDB_PROJECT'] = 'lima_ft'
-os.environ['WANDB_DIR'] = '/work3/s184399/logs/wandb'
-os.environ['WANDB_CACHE_DIR'] = '/work3/s184399/cache_dir/wandb'
+test = True    # Flag for whether we are testing the code or not. If true, we pass a single batch and overfit to that...
 
 model_name = "facebook/opt-125m"   # Small enough to do fairly fast generation on CPU (0.8s per small sentence) => Might be good for development, debugging and testing...
 dataset_name = "GAIR/lima"
+experiment_name = f"{dataset_name.split('/')[1]}-{model_name.split('/')[1]}" + ("-test" if test else "")
+
+OUTPUT_DIR = os.getenv("OUTPUT_DIR_MSC")
+assert OUTPUT_DIR is not None
+print(f"Outputting to: {OUTPUT_DIR}")
+
+os.environ['WANDB_PROJECT'] = 'lima_ft'
+os.environ['WANDB_DIR'] = os.path.join(OUTPUT_DIR, 'logs', 'wandb')   #'/work3/s184399/logs/wandb'
+os.environ['WANDB_CACHE_DIR'] = os.path.join(OUTPUT_DIR, 'cache_dir', 'wandb')  # '/work3/s184399/cache_dir/wandb'
+cache_dir = os.path.join(OUTPUT_DIR, 'cache_dir', 'huggingface') # "/work3/s184399/cache_dir/huggingface"
+checkpoint_dir = os.path.join(OUTPUT_DIR, 'checkpoints', experiment_name) # "/work3/s184399/checkpoints/lima-opt-125m"
+logging_dir = os.path.join(OUTPUT_DIR, 'logs', experiment_name)  # "/work3/s184399/logs/lima-opt-125m"
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
-model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
-tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(model_name, cache_dir=cache_dir, device_map="auto")
+tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=cache_dir)
 
 # Dataset setup
 ## Data collator: To tell the trainer how to split and mask the dataset (in teacher forcing)
@@ -57,7 +64,7 @@ def process_ds(ds):
         aux, remove_columns=["conversations", "source"]
     )
 
-ds = load_dataset(dataset_name, 'plain_text')
+ds = load_dataset(dataset_name, 'plain_text', cache_dir=cache_dir)
 train_ds = process_ds(ds["train"]).train_test_split(train_size=1 if test else 0.8)   # Test size can be given as fraction or absolute number.... Also useful for testing.
 train_split, val_split = train_ds["train"], train_ds["test"]
 eval_ds = ds["test"]["conversations"]
@@ -105,8 +112,8 @@ training_args = TrainingArguments(
     gradient_checkpointing=True,
     logging_steps=25,
     do_train=True,
-    output_dir="/work3/s184399/checkpoints/lima-opt-125m",
-    logging_dir="/work3/s184399/logs/lima-opt-125m",
+    output_dir=checkpoint_dir,
+    logging_dir=logging_dir,
     overwrite_output_dir=True,
     report_to="wandb",
     run_name="opt-125m code test" if test else "finetune-opt-125m",

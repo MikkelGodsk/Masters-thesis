@@ -35,6 +35,7 @@ source $HOME/miniconda3/bin/activate
 module load cuda/12.1
 module load cudnn/v8.9.1.23-prod-cuda-12.X
 conda activate msc
+export OUTPUT_DIR_MSC=/work3/s184399/msc   # Then use os.getenv("OUTPUT_DIR") in the script
 export CUDA_LAUNCH_BLOCKING=1
 
 #export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
