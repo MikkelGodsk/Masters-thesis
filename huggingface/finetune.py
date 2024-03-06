@@ -1,0 +1,93 @@
+from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import TrainingArguments
+from transformers.integrations import WandbCallback
+from trl import SFTTrainer
+from trl.trainer import DataCollatorForCompletionOnlyLM
+from datasets import load_dataset, Dataset
+import torch
+import wandb
+import numpy as np
+import os
+from time import time
+
+from profiler_callbacks import ProfilerCallback
+from lima_utils import *
+
+"""
+TODO:  Reproduce LIMA experiment &
+- Get WandB to log on work3!!   WORKS
+- Overfit to single batch       WORKS
+- Validation set                WORKS
+- Use click or something else
+- Checkpointing....
+- Accelerate for multi gpu??
+- Gradient trick??
+- DPO?
+- CPU off loading
+- PEFT
+"""
+
+test = True    # Flag for whether we are testing the code or not. If true, we pass a single batch and overfit to that...
+
+model_name = "facebook/opt-125m"
+dataset_name = "GAIR/lima"
+experiment_name = f"{dataset_name.split('/')[1]}-{model_name.split('/')[1]}" + ("-test" if test else "") + f"-{int(time())}"
+
+OUTPUT_DIR = os.getenv("OUTPUT_DIR_MSC")
+assert OUTPUT_DIR is not None
+
+os.environ['WANDB_PROJECT'] = 'lima_ft_playground'
+os.environ['WANDB_DIR'] = os.path.join(OUTPUT_DIR, 'logs')   #'/work3/s184399/logs/wandb'
+os.environ['WANDB_CACHE_DIR'] = os.path.join(OUTPUT_DIR, 'cache_dir', 'wandb')  # '/work3/s184399/cache_dir/wandb'
+cache_dir = os.path.join(OUTPUT_DIR, 'cache_dir', 'huggingface') # "/work3/s184399/cache_dir/huggingface"
+checkpoint_dir = os.path.join(OUTPUT_DIR, 'checkpoints', experiment_name) # "/work3/s184399/checkpoints/lima-opt-125m"
+logging_dir = os.path.join(OUTPUT_DIR, 'logs', experiment_name)  # "/work3/s184399/logs/lima-opt-125m"
+
+model = AutoModelForCausalLM.from_pretrained(model_name, cache_dir=cache_dir, device_map="auto")  # Not sure if the device map enables FSDP by default...
+tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=cache_dir)
+
+# Dataset setup
+## Data collator: To tell the trainer how to split and mask the dataset (in teacher forcing)
+collator = DataCollatorForCompletionOnlyLM(instruction_template=instruction_template, response_template=response_template, tokenizer=tokenizer, mlm=False)
+    # DataCollatorForCompletionOnlyLM finds the instruction template (by looping through the tokens - as we could easily implement ourselves) and cuts. Then it cuts again after the assistant template.
+    # The cuts are, however, not made in the input_ids... Here the model is being given the answers too.... But the labels are set to -100 for everything until the answer begins, making the loss function ignore them...
+    # Hence it implements teacher forcing when trained....
+    # The trainer's dataloader (evidently) calls its DataCollatorForCompletionOnlyLM.torch_call method either during dataset building or during fetching
+
+ds = load_dataset(dataset_name, 'plain_text', cache_dir=cache_dir)
+train_ds = process_ds(ds["train"])
+if test: train_ds = Dataset.from_dict(train_ds[0:1])  # Single batch for debugging purposes
+eval_ds = ds["test"]["conversations"]
+len_eval = len(eval_ds)
+len_train_ds = len(train_ds)
+
+training_args = TrainingArguments(
+    num_train_epochs=2,
+    per_device_train_batch_size=1,
+    lr_scheduler_type="cosine",
+    gradient_accumulation_steps=1,
+    gradient_checkpointing=True,
+    logging_steps=2,
+    do_train=True,
+    output_dir=checkpoint_dir,
+    logging_dir=logging_dir,
+    overwrite_output_dir=True,
+    report_to="wandb",
+    run_name=experiment_name,
+    save_strategy="epoch"
+)
+trainer = SFTTrainer(
+    model=model,
+    tokenizer=tokenizer,
+    args=training_args,
+    data_collator=collator,
+    dataset_text_field="text",
+    train_dataset=train_ds,
+    max_seq_length=256,   # My PC can handle this with OPT-125m !!!
+    callbacks=[
+        ExampleCallback(train_ds, eval_ds, max_new_tokens=128), 
+        ProfilerCallback(logging_dir, profile_epoch=1, upload_to_wandb=True), 
+        #MemoryHistoryCallback(profile_epoch=1)
+    ],
+)
+trainer.train()
