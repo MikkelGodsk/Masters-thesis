@@ -86,7 +86,7 @@ trainer = SFTTrainer(
     train_dataset=train_ds,
     max_seq_length=2048,   # My PC can handle max_seq_length=256 with OPT-125m !!!   # It seems like the UserWarning with not being able to find the instruction and response templates were fixed when setting max_seq_length=2048....
     callbacks=[
-        TorchProfilerCallback(logging_dir, profile_epochs=[0], profile_n_steps=5, upload_to_wandb=False), 
+        TorchProfilerCallback(logging_dir, profile_epochs=[0], profile_n_steps=5, upload_to_wandb=True), 
         MemoryHistoryCallback(logging_dir, profile_epochs=[0], profile_n_steps=5),
         ExampleCallback(train_ds, eval_ds, max_new_tokens=1024), 
     ],

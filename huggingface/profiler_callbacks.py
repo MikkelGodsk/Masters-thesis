@@ -8,31 +8,178 @@ from transformers.trainer_callback import TrainerControl, TrainerState
 from transformers.training_args import TrainingArguments
 from transformers import TrainerCallback
 import wandb
-from typing import List
+from typing import List, Optional
 from math import floor
+
 
 TIME_FORMAT_STR: str = "%b_%d_%H_%M_%S"
 
 def get_timestamp():
     return datetime.now().strftime(TIME_FORMAT_STR)
 
-def extract_png_from_html(html_content: str):
-    """
-        Source: ChatGPT
-    """
-    import base64
-    from PIL import Image
-    import io
-    # Extract base64 string from your HTML content
-    # html_content is your HTML file content as a string
-    start = html_content.find('base64,') + 7
-    end = html_content.find('"', start)
-    base64_image = html_content[start:end]
 
-    # Decode and load the image
-    image_data = base64.b64decode(base64_image)
-    image = Image.open(io.BytesIO(image_data))
-    return image
+def extract_memory_timeline_png(profiler, file_path: str, device: Optional[str] = None, figsize=(20, 12), title=None):
+    """
+        This function is modified directly from the PyTorch source code here:
+        - https://github.com/pytorch/pytorch/blob/76f3663efea524adcb60f515b471c412aa78b95e/torch/profiler/profiler.py#L258
+        - https://github.com/pytorch/pytorch/blob/360761f7d039445e7b00493c2990ace9f94a5a9e/torch/profiler/_memory_profiler.py#L1133
+
+        It is a bit of a hack, but it works. The original function is not meant to be used like this, but it is the only way to get the memory timeline as an SVG file. Copyright disclaimer from PyTorch:
+
+
+        From PyTorch:
+
+        Copyright (c) 2016-     Facebook, Inc            (Adam Paszke)
+        Copyright (c) 2014-     Facebook, Inc            (Soumith Chintala)
+        Copyright (c) 2011-2014 Idiap Research Institute (Ronan Collobert)
+        Copyright (c) 2012-2014 Deepmind Technologies    (Koray Kavukcuoglu)
+        Copyright (c) 2011-2012 NEC Laboratories America (Koray Kavukcuoglu)
+        Copyright (c) 2011-2013 NYU                      (Clement Farabet)
+        Copyright (c) 2006-2010 NEC Laboratories America (Ronan Collobert, Leon Bottou, Iain Melvin, Jason Weston)
+        Copyright (c) 2006      Idiap Research Institute (Samy Bengio)
+        Copyright (c) 2001-2004 Idiap Research Institute (Ronan Collobert, Samy Bengio, Johnny Mariethoz)
+
+        From Caffe2:
+
+        Copyright (c) 2016-present, Facebook Inc. All rights reserved.
+
+        All contributions by Facebook:
+        Copyright (c) 2016 Facebook Inc.
+
+        All contributions by Google:
+        Copyright (c) 2015 Google Inc.
+        All rights reserved.
+
+        All contributions by Yangqing Jia:
+        Copyright (c) 2015 Yangqing Jia
+        All rights reserved.
+
+        All contributions by Kakao Brain:
+        Copyright 2019-2020 Kakao Brain
+
+        All contributions by Cruise LLC:
+        Copyright (c) 2022 Cruise LLC.
+        All rights reserved.
+
+        All contributions from Caffe:
+        Copyright(c) 2013, 2014, 2015, the respective contributors
+        All rights reserved.
+
+        All other contributions:
+        Copyright(c) 2015, 2016 the respective contributors
+        All rights reserved.
+
+        Caffe2 uses a copyright model similar to Caffe: each contributor holds
+        copyright over their contributions to Caffe2. The project versioning records
+        all such contribution and copyright details. If a contributor wants to further
+        mark their specific copyright on a particular contribution, they should
+        indicate their copyright solely in the commit message of the change when it is
+        committed.
+
+        All rights reserved.
+
+        Redistribution and use in source and binary forms, with or without
+        modification, are permitted provided that the following conditions are met:
+
+        1. Redistributions of source code must retain the above copyright
+        notice, this list of conditions and the following disclaimer.
+
+        2. Redistributions in binary form must reproduce the above copyright
+        notice, this list of conditions and the following disclaimer in the
+        documentation and/or other materials provided with the distribution.
+
+        3. Neither the names of Facebook, Deepmind Technologies, NYU, NEC Laboratories America
+        and IDIAP Research Institute nor the names of its contributors may be
+        used to endorse or promote products derived from this software without
+        specific prior written permission.
+
+        THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+        AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+        IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+        ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+        LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+        CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+        SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+        INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+        CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+        ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+        POSSIBILITY OF SUCH DAMAGE.
+    """
+    import enum
+    # From file
+    class Category(enum.Enum):
+        INPUT = enum.auto()
+        TEMPORARY = enum.auto()
+        ACTIVATION = enum.auto()
+        GRADIENT = enum.auto()
+        AUTOGRAD_DETAIL = enum.auto()
+        PARAMETER = enum.auto()
+        OPTIMIZER_STATE = enum.auto()
+
+    _CATEGORY_TO_COLORS = {
+        Category.PARAMETER: "darkgreen",
+        Category.OPTIMIZER_STATE: "goldenrod",
+        Category.INPUT: "black",
+        Category.TEMPORARY: "mediumpurple",
+        Category.ACTIVATION: "red",
+        Category.GRADIENT: "mediumblue",
+        Category.AUTOGRAD_DETAIL: "royalblue",
+        None: "grey",
+    }
+
+    _CATEGORY_TO_INDEX = {c: i for i, c in enumerate(_CATEGORY_TO_COLORS)}
+
+
+    # From profiler
+    if device is None and profiler.use_device and profiler.use_device != "cuda":
+        device = profiler.use_device + ":0"
+
+    if device is None:
+        device = "cuda:0" if torch.cuda.is_available() else "cpu"
+
+    from torch.profiler._memory_profiler import MemoryProfile, MemoryProfileTimeline
+    mem_tl = MemoryProfileTimeline(profiler._memory_profile())
+
+    # From MemoryProfileTimeline
+    import matplotlib.pyplot as plt
+    import numpy as np
+    device_str = device
+
+    mt = mem_tl._coalesce_timeline(device_str)
+    times, sizes = np.array(mt[0]), np.array(mt[1])
+    # For this timeline, start at 0 to match Chrome traces.
+    t_min = min(times)
+    times -= t_min
+    stacked = np.cumsum(sizes, axis=1) / 1024**3
+    device = torch.device(device_str)
+    max_memory_allocated = torch.cuda.max_memory_allocated(device)
+    max_memory_reserved = torch.cuda.max_memory_reserved(device)
+
+    # Plot memory timeline as stacked data
+    fig = plt.figure(figsize=figsize, dpi=80)
+    axes = fig.gca()
+    for category, color in _CATEGORY_TO_COLORS.items():
+        i = _CATEGORY_TO_INDEX[category]
+        axes.fill_between(
+            times / 1e3, stacked[:, i], stacked[:, i + 1], color=color, alpha=0.7
+        )
+    fig.legend(["Unknown" if i is None else i.name for i in _CATEGORY_TO_COLORS])
+    # Usually training steps are in magnitude of ms.
+    axes.set_xlabel("Time (ms)")
+    axes.set_ylabel("Memory (GB)")
+    title = "\n\n".join(
+        ([title] if title else [])
+        + [
+            f"Max memory allocated: {max_memory_allocated/(1024**3):.2f} GiB \n"
+            f"Max memory reserved: {max_memory_reserved/(1024**3):.2f} GiB"
+        ]
+    )
+    axes.set_title(title)
+
+    # Embed the memory timeline image into the HTML file
+    fig.savefig(file_path, format="svg")
+
+    return fig
 
 
 class ProfilerCallbackBase(TrainerCallback):
@@ -71,7 +218,10 @@ class ProfilerCallbackBase(TrainerCallback):
 
     def stop_(self, epoch=-1):
         if self.is_running:
-            self.stop(epoch)
+            timestamp = get_timestamp()
+            epoch_str = f"epoch_-{int(floor(epoch))}" if epoch>0 else ""
+            file_identifier = f"{epoch_str}{timestamp}"
+            self.stop(epoch, file_identifier)
             self.is_running = False
 
     def step_(self):
@@ -84,7 +234,8 @@ class ProfilerCallbackBase(TrainerCallback):
     def step(self):  # May be overwritten
         pass
     
-    def stop(self):  # Should be overwritten
+    def stop(self, file_identifier):  # Should be overwritten
+        # file_identifier is part of the filename. E.g. name the file: f"stack_trace_{file_identifier}.json"
         raise NotImplementedError
 
     # Fyi, kwargs has keys: ['model', 'tokenizer', 'optimizer', 'lr_scheduler', 'train_dataloader', 'eval_dataloader']
@@ -152,29 +303,21 @@ class TorchProfilerCallback(ProfilerCallbackBase):
     def step(self):
         self.profiler.step()
 
-    def stop(self, epoch=-1):
+    def stop(self, epoch, file_identifier):
         """
             Stop the profiler and save the data to disk. Is safe to call whenever. Does nothing if the profiler is not running.
         """
         print("\n\nStopping profiler\n\n")
         self.profiler.stop()
-        timestamp = get_timestamp()
-        epoch_str = f"_epoch-{epoch}" if epoch>0 else ""
-        trace_file = os.path.join(self.profile_dir, f"stack_trace{epoch_str}_{timestamp}.json")
-        memory_file = os.path.join(self.profile_dir, f"memory_timeline{epoch_str}_{timestamp}.json")
-        memory_file_html = os.path.join(self.profile_dir, f"memory_timeline{epoch_str}_{timestamp}.html")
+        trace_file = os.path.join(self.profile_dir, f"stack_trace_{file_identifier}.json")
+        memory_file = os.path.join(self.profile_dir, f"memory_timeline_{file_identifier}.json")
+        memory_file_img = os.path.join(self.profile_dir, f"memory_timeline_{file_identifier}.svg")
         self.profiler.export_chrome_trace(trace_file)
         self.profiler.export_memory_timeline(memory_file)
-        self.profiler.export_memory_timeline(memory_file_html)
-        print(f"\n\nProfiler data saved to {trace_file}\nand {memory_file}\nand {memory_file_html}\n")
-        if self.upload_to_wandb:   # This does not always seem to work...
-            print("\nTaking a 15 second nap to let the file be written to disk before uploading to W&B")
-            time.sleep(15)  # Wait for the file to be written to disk
-            with open(memory_file_html, "r") as f:
-                html_content = f.read()
-            image = extract_png_from_html(html_content)
-            wandb.log({f"Sample of memory timeline at epoch {epoch}": wandb.Image(image)})
-
+        fig = extract_memory_timeline_png(self.profiler, memory_file_img, device="cuda:0", title=f"Memory timeline at epoch {epoch}")
+        print(f"\n\nProfiler data saved to {trace_file}\nand {memory_file}\nand {memory_file_img}\n")
+        if self.upload_to_wandb:
+            wandb.log({f"Sample of memory timeline at epoch {epoch}": wandb.Image(fig)})
 
 
 class MemoryHistoryCallback(ProfilerCallbackBase):
@@ -201,11 +344,9 @@ class MemoryHistoryCallback(ProfilerCallbackBase):
         torch.cuda.empty_cache()
         torch.cuda.memory._record_memory_history(enabled='all')
 
-    def stop(self, epoch=-1):
+    def stop(self, epoch, file_identifier):
         print("\n\nStopping CUDA memory recorder\n\n")
-        timestamp = get_timestamp()
-        epoch_str = f"_epoch-{epoch}" if epoch>0 else ""
-        file_name = os.path.join(self.profile_dir, f"memory_trace{epoch_str}_{timestamp}.pickle")
+        file_name = os.path.join(self.profile_dir, f"memory_trace_{file_identifier}.pickle")
         s = torch.cuda.memory._snapshot()
         with open(file_name, "wb") as f:
             pickle.dump(s, f)
