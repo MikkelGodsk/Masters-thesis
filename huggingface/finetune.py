@@ -10,7 +10,7 @@ import numpy as np
 import os
 from time import time
 
-from profiler_callbacks import ProfilerCallback
+from profiler_callbacks import ProfilerCallback, MemoryHistoryCallback
 from lima_utils import *
 
 """
@@ -27,7 +27,7 @@ TODO:  Reproduce LIMA experiment &
 - PEFT
 """
 
-test = True    # Flag for whether we are testing the code or not. If true, we pass a single batch and overfit to that...
+test = False    # Flag for whether we are testing the code or not. If true, we pass a single batch and overfit to that...
 
 model_name = "facebook/opt-125m"
 dataset_name = "GAIR/lima"
@@ -56,18 +56,18 @@ collator = DataCollatorForCompletionOnlyLM(instruction_template=instruction_temp
 
 ds = load_dataset(dataset_name, 'plain_text', cache_dir=cache_dir)
 train_ds = process_ds(ds["train"])
-if test: train_ds = Dataset.from_dict(train_ds[0:1])  # Single batch for debugging purposes
+if test: train_ds = Dataset.from_dict(train_ds[0:1])  # Can we overfit to a single batch? (For testing/debugging purposes)
 eval_ds = ds["test"]["conversations"]
 len_eval = len(eval_ds)
 len_train_ds = len(train_ds)
 
 training_args = TrainingArguments(
-    num_train_epochs=2,
+    num_train_epochs=1,
     per_device_train_batch_size=1,
     lr_scheduler_type="cosine",
     gradient_accumulation_steps=1,
     gradient_checkpointing=True,
-    logging_steps=2,
+    logging_steps=100,
     do_train=True,
     output_dir=checkpoint_dir,
     logging_dir=logging_dir,
@@ -83,11 +83,11 @@ trainer = SFTTrainer(
     data_collator=collator,
     dataset_text_field="text",
     train_dataset=train_ds,
-    max_seq_length=256,   # My PC can handle this with OPT-125m !!!
+    max_seq_length=256,   # My PC can handle this with OPT-125m !!!   # It seems like the UserWarning with not being able to find the instruction and response templates were fixed when setting max_seq_length=2048....
     callbacks=[
+        ProfilerCallback(logging_dir, profile_epochs=[0], profile_n_steps=3, upload_to_wandb=True), 
         ExampleCallback(train_ds, eval_ds, max_new_tokens=128), 
-        ProfilerCallback(logging_dir, profile_epoch=1, upload_to_wandb=True), 
-        #MemoryHistoryCallback(profile_epoch=1)
+        MemoryHistoryCallback(profile_epochs=[0], profile_n_steps=3)
     ],
 )
 trainer.train()

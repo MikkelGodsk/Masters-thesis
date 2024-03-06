@@ -9,7 +9,8 @@ response_template = "### Assistant:"
 
 
 def to_template(prompt, response=""):
-    return f"{instruction_template} {prompt}{response_template} {response}"
+    #return f"{instruction_template} {prompt}{response_template} {response}"
+    return f"{instruction_template}\n{prompt}\n\n{response_template}\n{response}"   # This article might have an opinion on this: https://www.philschmid.de/instruction-tune-llama-2
 
 def format_prompt(prompt):
     return prompt.replace(instruction_template, '').replace(response_template, '')
