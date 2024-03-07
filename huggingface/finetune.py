@@ -14,19 +14,6 @@ from time import time
 from profiler_callbacks import TorchProfilerCallback, MemoryHistoryCallback, WandBProfilerCallback, WandBTimerCallback
 from lima_utils import *
 
-"""
-TODO:  Reproduce LIMA experiment &
-- Get WandB to log on work3!!   WORKS
-- Overfit to single batch       WORKS
-- Validation set                WORKS
-- Use click or something else   WORKS (used jsonargparse)
-- Checkpointing....
-- Accelerate for multi gpu??
-- Gradient trick??
-- DPO?
-- CPU off loading
-- PEFT
-"""
 
 SPECIAL_TOKENS_DICT = {'pad_token': '<pad>', 'bos_token': '<s>', 'eos_token': '</s>', 'unk_token': '<unk>', 'mask_token': '<mask>'}
 
