@@ -10,7 +10,7 @@ import numpy as np
 import os
 from time import time
 
-from profiler_callbacks import TorchProfilerCallback, MemoryHistoryCallback
+from profiler_callbacks import TorchProfilerCallback, MemoryHistoryCallback, WandBProfilerCallback
 from lima_utils import *
 
 """
@@ -27,7 +27,7 @@ TODO:  Reproduce LIMA experiment &
 - PEFT
 """
 
-test = False    # Flag for whether we are testing the code or not. If true, we pass a single batch and overfit to that...
+test = True    # Flag for whether we are testing the code or not. If true, we pass a single batch and overfit to that...
 n_test_batches = 10  # E.g.: Can we overfit to a single batch? (For testing/debugging purposes). We should be able to if the model is set up correctly...
 
 model_name = "facebook/opt-125m"
@@ -84,11 +84,12 @@ trainer = SFTTrainer(
     data_collator=collator,
     dataset_text_field="text",
     train_dataset=train_ds,
-    max_seq_length=2048,   # My PC can handle max_seq_length=256 with OPT-125m !!!   # It seems like the UserWarning with not being able to find the instruction and response templates were fixed when setting max_seq_length=2048....
+    max_seq_length=256, #2048,   # My PC can handle max_seq_length=256 with OPT-125m !!!   # It seems like the UserWarning with not being able to find the instruction and response templates were fixed when setting max_seq_length=2048....
     callbacks=[
-        TorchProfilerCallback(logging_dir, profile_epochs=[0], profile_n_steps=5, upload_to_wandb=True), 
-        MemoryHistoryCallback(logging_dir, profile_epochs=[0], profile_n_steps=5),
-        ExampleCallback(train_ds, eval_ds, max_new_tokens=1024), 
+        WandBProfilerCallback(logging_dir, profile_epochs=[], profile_n_steps=5),
+        #TorchProfilerCallback(logging_dir, profile_epochs=[0], profile_n_steps=5, do_stack_profile=False, upload_to_wandb=True), 
+        #MemoryHistoryCallback(logging_dir, profile_epochs=[0], profile_n_steps=5),
+        #ExampleCallback(train_ds, eval_ds, max_new_tokens=128), #1024), 
     ],
 )
 trainer.train()

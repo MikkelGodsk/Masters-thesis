@@ -17,8 +17,220 @@ TIME_FORMAT_STR: str = "%b_%d_%H_%M_%S"
 def get_timestamp():
     return datetime.now().strftime(TIME_FORMAT_STR)
 
+def torch_get_devices():
+    return [f"cuda:{i}" for i in range(torch.cuda.device_count())]
 
-def extract_memory_timeline_png(profiler, file_path: str, device: Optional[str] = None, figsize=(20, 12), title=None):
+
+class ProfilerCallbackBase(TrainerCallback):
+    """
+        Base class for the profilers. Since they have to be scheduled identically, it makes sense to have a base class for them.
+        The subclasses are meant to be used like this:
+        ```
+        trainer = SFTTrainer(
+            ...
+            callbacks=[
+                TorchProfilerCallback(logging_dir, profile_epochs=[1], profile_n_steps=5), 
+                MemoryHistoryCallback(logging_dir, profile_epochs=[1], profile_n_steps=5),
+                ...
+            ],
+        )
+        ```
+        I.e., they are scheduled to log the first `profile_n_steps` of each epoch in `profile_epochs`. This to ensure that the files to not become too large.
+
+        NOTE: Be very careful that they do not log during the logging, if you are logging using model inference! This will make the files very large and slow to open!
+
+        Docs: For HuggingFace callbacks, see https://huggingface.co/docs/transformers/main_classes/callback#transformers.TrainerCallback
+    """
+    def __init__(self, logging_dir: str, *args, profile_epochs: List[int]=[], profile_n_steps:int=1, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.profile_epochs = profile_epochs
+        self.profile_n_steps = profile_n_steps
+        self.step_counter = 0
+        self.is_running = False
+        self.profile_dir = os.path.join(logging_dir, "profile")
+        os.makedirs(self.profile_dir, exist_ok=True)
+
+    def start_(self):
+        if not self.is_running:
+            self.start()
+            self.is_running = True
+
+    def stop_(self, epoch=-1):
+        if self.is_running:
+            epoch = int(floor(epoch))
+            timestamp = get_timestamp()
+            epoch_str = f"epoch_-{epoch}" if epoch>0 else ""
+            file_identifier = f"{epoch_str}{timestamp}"
+            self.stop(epoch, file_identifier)
+            self.is_running = False
+
+    def step_(self):
+        if self.is_running:
+            self.step()
+
+    def start(self):  # Should be overwritten
+        raise NotImplementedError
+    
+    def step(self):  # May be overwritten
+        pass
+    
+    def stop(self, file_identifier):  # Should be overwritten
+        # file_identifier is part of the filename. E.g. name the file: f"stack_trace_{file_identifier}.json"
+        raise NotImplementedError
+
+    # Fyi, kwargs has keys: ['model', 'tokenizer', 'optimizer', 'lr_scheduler', 'train_dataloader', 'eval_dataloader']
+    def on_epoch_begin(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+        if (floor(state.epoch) in self.profile_epochs) or (len(self.profile_epochs) == 0):    # state.epoch is a float, not an int...
+            self.start_()
+            self.step_counter = 0
+
+    def on_step_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+        if (floor(state.epoch) in self.profile_epochs) or (len(self.profile_epochs) == 0):   # state.epoch is a float, not an int...
+            self.step_()
+            if self.step_counter > self.profile_n_steps-1:
+                self.stop_(epoch=state.epoch)
+            self.step_counter += 1
+
+    def on_epoch_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+        if (floor(state.epoch)-1 in self.profile_epochs) or (len(self.profile_epochs) == 0):   # state.epoch is a float, not an int... So we need to subtract 1 as it counts a bit up for every step...
+            self.stop_()  # Stop just in case it is still running
+
+    def on_train_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+        self.stop_()  # Stop just in case it is still running
+
+
+class TorchProfilerCallback(ProfilerCallbackBase):
+    """
+    This callback logs the PyTorch profiler data for a given epoch. It logs the first n steps of an epoch.
+    NOTE: Be careful that this one does not log during the logging, if you are logging using model inference!
+
+    To open the profiler stack trace data in Chrome, go to chrome://tracing and drag in the JSON file.
+    To open the memory timeline, open the HTML file in a browser or view it in W&B.
+
+    How to use with Hugging Face Trainer:
+    ```
+    trainer = SFTTrainer(
+        ...
+        callbacks=[
+            ProfilerCallback(logging_dir, profile_epochs=[1], profile_n_steps=1, upload_to_wandb=True), 
+        ],
+    )
+    ```
+
+    Docs: https://pytorch.org/tutorials/recipes/recipes/profiler.html
+    and https://pytorch.org/docs/stable/profiler.html
+    """
+    def __init__(self, logging_dir: str, *args, profile_epochs: List[int]=[], profile_n_steps:int=1, do_memory_profile=True, do_stack_profile=True, upload_to_wandb=True, save_files=True, verbose=True, **kwargs):
+        super().__init__(logging_dir, *args, profile_epochs=profile_epochs, profile_n_steps=profile_n_steps, **kwargs)
+        self.upload_to_wandb = upload_to_wandb
+        self.save_files = save_files
+        self.do_memory_profile = do_memory_profile
+        self.do_stack_profile = do_stack_profile
+        self.verbose = verbose
+        self.profiler = self.setup_profiler()
+
+    def setup_profiler(self):
+        return torch.profiler.profile(
+            activities=[
+                torch.profiler.ProfilerActivity.CPU,
+                torch.profiler.ProfilerActivity.CUDA,
+            ],
+            record_shapes=True,
+            with_stack=True,
+            profile_memory=True,
+        )
+
+    def start(self):
+        if self.verbose:
+            print("\n\nStarting profiler\n\n")
+        self.profiler.start()
+    
+    def step(self):
+        self.profiler.step()
+
+    def stop(self, epoch, file_identifier):
+        """
+            Stop the profiler and save the data to disk. Is safe to call whenever. Does nothing if the profiler is not running.
+        """
+        if self.verbose:
+            print("\n\nStopping profiler\n")
+        self.profiler.stop()
+
+        if self.do_stack_profile and self.save_files:
+            trace_file = os.path.join(self.profile_dir, f"stack_trace_{file_identifier}.json")
+            self.profiler.export_chrome_trace(trace_file)
+            print(f"Stack profiler data saved to {trace_file} (use Google Chrome and go to 'chrome://tracing' to read this file)")
+
+        if self.do_memory_profile:
+            memory_file = os.path.join(self.profile_dir, f"memory_timeline_{file_identifier}.json")
+            if self.save_files:
+                self.profiler.export_memory_timeline(memory_file)
+                print(f"Memory profiler data saved to {memory_file}")
+
+            for device_str in torch_get_devices():
+                memory_file_img = os.path.join(self.profile_dir, f"memory_timeline_{file_identifier}_{device_str.replace(':','_')}.svg")
+                fig = extract_memory_timeline_svg(self.profiler, memory_file_img, device=device_str, title=f"Memory timeline at epoch {epoch} on device {device_str}", save_file=self.save_files)
+                if self.save_files:
+                    print(f"Memory profiler data saved to {memory_file_img}")
+                if self.upload_to_wandb: 
+                    wandb.log({f"Memory timeline": wandb.Image(fig)})
+        
+        if self.verbose or self.save_files:
+            print("\n\n")
+
+
+class WandBProfilerCallback(TorchProfilerCallback):
+    def __init__(self, logging_dir: str, *args, profile_epochs: List[int]=[], profile_n_steps:int=1, **kwargs):
+        super().__init__(
+            logging_dir, 
+            *args, 
+            profile_epochs=profile_epochs, 
+            profile_n_steps=profile_n_steps, 
+            do_memory_profile=True, 
+            do_stack_profile=False, 
+            upload_to_wandb=True, 
+            save_files=False, 
+            verbose=False, 
+            **kwargs
+        )
+
+
+class MemoryHistoryCallback(ProfilerCallbackBase):
+    """
+    To view the memory trace, go to https://pytorch.org/memory_viz and drag in the pickle file.
+    
+    You might get this issue: 
+    ```
+    huggingface/tokenizers: The current process just got forked, after parallelism has already been used. Disabling parallelism to avoid deadlocks...
+    To disable this warning, you can either:
+        - Avoid using `tokenizers` before the fork if possible
+        - Explicitly set the environment variable TOKENIZERS_PARALLELISM=(true | false)
+    ```
+    I'm not sure what to do about it, so maybe this callback should only be used if you tend to run out of memory...
+
+    Docs: https://pytorch.org/docs/stable/torch_cuda_memory.html
+    and https://pytorch.org/blog/understanding-gpu-memory-1/
+    """
+    def __init__(self, logging_dir:str, *args, profile_epochs: List[int]=[], profile_n_steps:int=1, **kwargs):
+        super().__init__(logging_dir, *args, profile_epochs=profile_epochs, profile_n_steps=profile_n_steps, **kwargs)
+
+    def start(self):
+        print("\n\nStarting CUDA memory recorder\n\n")
+        torch.cuda.empty_cache()
+        torch.cuda.memory._record_memory_history(enabled='all')
+
+    def stop(self, epoch, file_identifier):
+        print("\n\nStopping CUDA memory recorder")
+        file_name = os.path.join(self.profile_dir, f"memory_trace_{file_identifier}.pickle")
+        s = torch.cuda.memory._snapshot()
+        with open(file_name, "wb") as f:
+            pickle.dump(s, f)
+        torch.cuda.memory._record_memory_history(enabled=None)
+        print(f"CUDA memory recording saved to {file_name} (go to https://pytorch.org/memory_viz to read this file)\n\n")
+
+
+# Apparently the rule in Python is to define the functions before they're called, not before they're used in another function...
+def extract_memory_timeline_svg(profiler, file_path: Optional[str] = None, device: Optional[str] = None, figsize=(20, 12), title=None, save_file=True):
     """
         This function is modified directly from the PyTorch source code here:
         - https://github.com/pytorch/pytorch/blob/76f3663efea524adcb60f515b471c412aa78b95e/torch/profiler/profiler.py#L258
@@ -177,179 +389,8 @@ def extract_memory_timeline_png(profiler, file_path: str, device: Optional[str] 
     axes.set_title(title)
 
     # Embed the memory timeline image into the HTML file
-    fig.savefig(file_path, format="svg")
+    if file_path is not None and save_file:
+        fig.savefig(file_path, format="svg")
 
     return fig
-
-
-class ProfilerCallbackBase(TrainerCallback):
-    """
-        Base class for the profilers. Since they have to be scheduled identically, it makes sense to have a base class for them.
-        The subclasses are meant to be used like this:
-        ```
-        trainer = SFTTrainer(
-            ...
-            callbacks=[
-                TorchProfilerCallback(logging_dir, profile_epochs=[1], profile_n_steps=5), 
-                MemoryHistoryCallback(logging_dir, profile_epochs=[1], profile_n_steps=5),
-                ...
-            ],
-        )
-        ```
-        I.e., they are scheduled to log the first `profile_n_steps` of each epoch in `profile_epochs`. This to ensure that the files to not become too large.
-
-        NOTE: Be very careful that they do not log during the logging, if you are logging using model inference! This will make the files very large and slow to open!
-
-        Docs: For HuggingFace callbacks, see https://huggingface.co/docs/transformers/main_classes/callback#transformers.TrainerCallback
-    """
-    def __init__(self, logging_dir: str, *args, profile_epochs: List[int]=[1], profile_n_steps:int=1, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.profile_epochs = profile_epochs
-        self.profile_n_steps = profile_n_steps
-        self.step_counter = 0
-        self.is_running = False
-        self.profile_dir = os.path.join(logging_dir, "profile")
-        os.makedirs(self.profile_dir, exist_ok=True)
-
-    def start_(self):
-        if not self.is_running:
-            self.start()
-            self.is_running = True
-
-    def stop_(self, epoch=-1):
-        if self.is_running:
-            timestamp = get_timestamp()
-            epoch_str = f"epoch_-{int(floor(epoch))}" if epoch>0 else ""
-            file_identifier = f"{epoch_str}{timestamp}"
-            self.stop(epoch, file_identifier)
-            self.is_running = False
-
-    def step_(self):
-        if self.is_running:
-            self.step()
-
-    def start(self):  # Should be overwritten
-        raise NotImplementedError
-    
-    def step(self):  # May be overwritten
-        pass
-    
-    def stop(self, file_identifier):  # Should be overwritten
-        # file_identifier is part of the filename. E.g. name the file: f"stack_trace_{file_identifier}.json"
-        raise NotImplementedError
-
-    # Fyi, kwargs has keys: ['model', 'tokenizer', 'optimizer', 'lr_scheduler', 'train_dataloader', 'eval_dataloader']
-    def on_epoch_begin(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
-        if floor(state.epoch) in self.profile_epochs:    # state.epoch is a float, not an int...
-            self.start_()
-            self.step_counter = 0
-
-    def on_step_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
-        if floor(state.epoch) in self.profile_epochs:   # state.epoch is a float, not an int...
-            self.step_()
-            if self.step_counter > self.profile_n_steps-1:
-                self.stop_(epoch=state.epoch)
-            self.step_counter += 1
-
-    def on_epoch_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
-        if floor(state.epoch)-1 in self.profile_epochs:   # state.epoch is a float, not an int... So we need to subtract 1 as it counts a bit up for every step...
-            self.stop_()  # Stop just in case it is still running
-
-    def on_train_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
-        self.stop_()  # Stop just in case it is still running
-
-
-class TorchProfilerCallback(ProfilerCallbackBase):
-    """
-    This callback logs the PyTorch profiler data for a given epoch. It logs the first n steps of an epoch.
-    NOTE: Be careful that this one does not log during the logging, if you are logging using model inference!
-
-    To open the profiler stack trace data in Chrome, go to chrome://tracing and drag in the JSON file.
-    To open the memory timeline, open the HTML file in a browser or view it in W&B.
-
-    How to use with Hugging Face Trainer:
-    ```
-    trainer = SFTTrainer(
-        ...
-        callbacks=[
-            ProfilerCallback(logging_dir, profile_epochs=[1], profile_n_steps=1, upload_to_wandb=True), 
-        ],
-    )
-    ```
-
-    Docs: https://pytorch.org/tutorials/recipes/recipes/profiler.html
-    and https://pytorch.org/docs/stable/profiler.html
-    """
-    def __init__(self, logging_dir: str, profile_epochs: List[int]=[1], profile_n_steps:int=1, upload_to_wandb: bool=True, *args, **kwargs):
-        super().__init__(logging_dir, *args, profile_epochs=profile_epochs, profile_n_steps=profile_n_steps, **kwargs)
-        self.upload_to_wandb = upload_to_wandb
-        self.profiler = self.setup_profiler()
-
-    def setup_profiler(self):
-        return torch.profiler.profile(
-            activities=[
-                torch.profiler.ProfilerActivity.CPU,
-                torch.profiler.ProfilerActivity.CUDA,
-            ],
-            record_shapes=True,
-            with_stack=True,
-            profile_memory=True,
-        )
-
-    def start(self):
-        print("\n\nStarting profiler\n\n")
-        self.profiler.start()
-    
-    def step(self):
-        self.profiler.step()
-
-    def stop(self, epoch, file_identifier):
-        """
-            Stop the profiler and save the data to disk. Is safe to call whenever. Does nothing if the profiler is not running.
-        """
-        print("\n\nStopping profiler\n\n")
-        self.profiler.stop()
-        trace_file = os.path.join(self.profile_dir, f"stack_trace_{file_identifier}.json")
-        memory_file = os.path.join(self.profile_dir, f"memory_timeline_{file_identifier}.json")
-        memory_file_img = os.path.join(self.profile_dir, f"memory_timeline_{file_identifier}.svg")
-        self.profiler.export_chrome_trace(trace_file)
-        self.profiler.export_memory_timeline(memory_file)
-        fig = extract_memory_timeline_png(self.profiler, memory_file_img, device="cuda:0", title=f"Memory timeline at epoch {epoch}")
-        print(f"\n\nProfiler data saved to {trace_file}\nand {memory_file}\nand {memory_file_img}\n")
-        if self.upload_to_wandb:
-            wandb.log({f"Sample of memory timeline at epoch {epoch}": wandb.Image(fig)})
-
-
-class MemoryHistoryCallback(ProfilerCallbackBase):
-    """
-    To view the memory trace, go to https://pytorch.org/memory_viz and drag in the pickle file.
-    
-    You might get this issue: 
-    ```
-    huggingface/tokenizers: The current process just got forked, after parallelism has already been used. Disabling parallelism to avoid deadlocks...
-    To disable this warning, you can either:
-        - Avoid using `tokenizers` before the fork if possible
-        - Explicitly set the environment variable TOKENIZERS_PARALLELISM=(true | false)
-    ```
-    I'm not sure what to do about it, so maybe this callback should only be used if you tend to run out of memory...
-
-    Docs: https://pytorch.org/docs/stable/torch_cuda_memory.html
-    and https://pytorch.org/blog/understanding-gpu-memory-1/
-    """
-    def __init__(self, logging_dir:str, *args, profile_epochs: List[int]=[1], profile_n_steps:int=1, **kwargs):
-        super().__init__(logging_dir, *args, profile_epochs=profile_epochs, profile_n_steps=profile_n_steps, **kwargs)
-
-    def start(self):
-        print("\n\nStarting CUDA memory recorder\n\n")
-        torch.cuda.empty_cache()
-        torch.cuda.memory._record_memory_history(enabled='all')
-
-    def stop(self, epoch, file_identifier):
-        print("\n\nStopping CUDA memory recorder\n\n")
-        file_name = os.path.join(self.profile_dir, f"memory_trace_{file_identifier}.pickle")
-        s = torch.cuda.memory._snapshot()
-        with open(file_name, "wb") as f:
-            pickle.dump(s, f)
-        torch.cuda.memory._record_memory_history(enabled=None)
-        print(f"\n\nCUDA memory recording saved to {file_name}\n")
 
