@@ -230,6 +230,7 @@ class WandBTimerCallback(TrainerCallback):
 class MemoryHistoryCallback(ProfilerCallbackBase):
     """
     To view the memory trace, go to https://pytorch.org/memory_viz and drag in the pickle file.
+    NOTE: The stack trace grows upwards here!
     
     You might get this issue: 
     ```
@@ -258,7 +259,7 @@ class MemoryHistoryCallback(ProfilerCallbackBase):
         with open(file_name, "wb") as f:
             pickle.dump(s, f)
         torch.cuda.memory._record_memory_history(enabled=None)
-        print(f"CUDA memory recording saved to {file_name} (go to https://pytorch.org/memory_viz to read this file)\n\n")
+        print(f"CUDA memory recording saved to {file_name} (go to https://pytorch.org/memory_viz to read this file - note that the stack grows upwards in the trace!)\n\n")
 
 
 # Apparently the rule in Python is to define the functions before they're called, not before they're used in another function...
