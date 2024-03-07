@@ -96,10 +96,12 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima", max_n
         # The cuts are, however, not made in the input_ids... Here the model is being given the answers too.... But the labels are set to -100 for everything until the answer begins, making the loss function ignore them...
         # Hence it implements teacher forcing when trained....
         # The trainer's dataloader (evidently) calls its DataCollatorForCompletionOnlyLM.torch_call method either during dataset building or during fetching
+        # UserWarning: It seems like the UserWarning with not being able to find the instruction and response templates were fixed when setting max_seq_length=2048....
 
     ds = load_dataset(dataset_name, 'plain_text', cache_dir=cache_dir)
     train_ds = process_ds(ds["train"])
-    if test: train_ds = Dataset.from_dict(train_ds[0:n_test_batches])
+    if test: 
+        train_ds = Dataset.from_dict(train_ds[0:n_test_batches])
     eval_ds = ds["test"]["conversations"]
 
     # Trainer setup
@@ -137,7 +139,7 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima", max_n
         data_collator=collator,
         dataset_text_field="text",
         train_dataset=train_ds,
-        max_seq_length=max_new_tokens,   # My PC can handle max_seq_length=256 with OPT-125m !!!   # It seems like the UserWarning with not being able to find the instruction and response templates were fixed when setting max_seq_length=2048....
+        max_seq_length=max_new_tokens,
         callbacks=callbacks,
     )
     trainer.train()
