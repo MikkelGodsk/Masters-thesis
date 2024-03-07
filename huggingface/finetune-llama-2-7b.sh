@@ -41,4 +41,4 @@ export CUDA_LAUNCH_BLOCKING=1
 #export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 cd $HOME/msc/huggingface
-python finetune.py --model "meta-llama/Llama-2-7b-hf" --max_new_tokens 4096
+python finetune.py --model "meta-llama/Llama-2-7b-hf" --max_seq_length 2048 --tf32 True --use_lora True --use_quantization True

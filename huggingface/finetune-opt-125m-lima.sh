@@ -2,7 +2,7 @@
 
 ### GPU and CPU related parameters for a simple GPU job script
 ### select a GPU queue
-#BSUB -q gpuv100
+#BSUB -q gpua100
 ### request the number of GPUs
 #BSUB -gpu "num=1:mode=exclusive_process"
 ### request the number of CPU cores (at least 4x the number of GPUs)
@@ -13,7 +13,7 @@
 #BSUB -R "rusage[mem=15GB]"
 
 ### -- set the job Name --
-#BSUB -J Finetune_opt-125m-lima_memory_comparison
+#BSUB -J Finetune_opt-125m-lima
 ### -- set walltime limit: hh:mm --  maximum 24 hours for GPU-queues right now
 #BSUB -W 6:00
 
@@ -40,5 +40,5 @@ export CUDA_LAUNCH_BLOCKING=1
 #export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 cd $HOME/msc/huggingface
-python finetune.py --model_name "facebook/opt-125m" --max_new_tokens 1024 --use_lora False --use_quantization False --profile True
-python finetune.py --model_name "facebook/opt-125m" --max_new_tokens 1024 --use_lora True --use_quantization True --profile True
+#python finetune.py --model_name "facebook/opt-125m" --max_seq_length 1024 --use_lora False --use_quantization False --profile True -- tf32 True
+python finetune.py --model_name "facebook/opt-125m" --max_seq_length 1024 --use_lora True --use_quantization True --profile True --tf32 True

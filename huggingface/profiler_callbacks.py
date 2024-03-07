@@ -41,10 +41,11 @@ class ProfilerCallbackBase(TrainerCallback):
 
         Docs: For HuggingFace callbacks, see https://huggingface.co/docs/transformers/main_classes/callback#transformers.TrainerCallback
     """
-    def __init__(self, logging_dir: str, *args, profile_epochs: List[int]=[], profile_n_steps:int=1, **kwargs):
+    def __init__(self, logging_dir: str, *args, profile_epochs: List[int]=[], profile_n_steps:int=1, repeat_every_n_steps=-1, **kwargs):
         super().__init__(*args, **kwargs)
         self.profile_epochs = profile_epochs
         self.profile_n_steps = profile_n_steps
+        self.repeat_every_n_steps = repeat_every_n_steps
         self.step_counter = 0
         self.is_running = False
         self.profile_dir = os.path.join(logging_dir, "profile")
@@ -59,8 +60,8 @@ class ProfilerCallbackBase(TrainerCallback):
         if self.is_running:
             epoch = int(floor(epoch))
             timestamp = get_timestamp()
-            epoch_str = f"epoch_-{epoch}" if epoch>0 else ""
-            file_identifier = f"{epoch_str}{timestamp}"
+            epoch_str = f"epoch_{epoch}" if epoch>0 else ""
+            file_identifier = f"{epoch_str}-{timestamp}"
             self.stop(epoch, file_identifier)
             self.is_running = False
 
@@ -83,6 +84,11 @@ class ProfilerCallbackBase(TrainerCallback):
         if (floor(state.epoch) in self.profile_epochs) or (len(self.profile_epochs) == 0):    # state.epoch is a float, not an int...
             self.start_()
             self.step_counter = 0
+
+    def on_step_begin(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+        if (not self.is_running) and (self.repeat_every_n_steps >= 0):
+            if self.step_counter % self.repeat_every_n_steps == 0:
+                self.start_()
 
     def on_step_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
         if (floor(state.epoch) in self.profile_epochs) or (len(self.profile_epochs) == 0):   # state.epoch is a float, not an int...
@@ -180,7 +186,7 @@ class TorchProfilerCallback(ProfilerCallbackBase):
 
 
 class WandBProfilerCallback(TorchProfilerCallback):
-    def __init__(self, *args, profile_epochs: List[int]=[], profile_n_steps:int=1, **kwargs):
+    def __init__(self, *args, profile_epochs: List[int]=[], profile_n_steps:int=5, **kwargs):
         super().__init__(
             "", 
             *args, 
@@ -210,21 +216,23 @@ class WandBTimerCallback(TrainerCallback):
 
     def on_train_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
         train_end = time.time()
-        wandb.log({"train_time": train_end - self.train_start, "real_time": time.time()})
+        wandb.log({"train_time": train_end - self.train_start})
 
     def on_epoch_begin(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
         self.epoch_start = time.time()
 
     def on_epoch_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
         epoch_end = time.time()
-        wandb.log({"epoch_time": epoch_end - self.epoch_start, "real_time": time.time()})
+        wandb.log({"epoch_time": epoch_end - self.epoch_start})
+        wandb.log({"epoch": state.epoch})
     
     def on_step_begin(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
         self.step_start = time.time()
 
     def on_step_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
         step_end = time.time()
-        wandb.log({"step_time": step_end - self.step_start, "real_time": time.time()})
+        wandb.log({"step_time": step_end - self.step_start})
+        wandb.log({"step": state.global_step})
 
 
 class MemoryHistoryCallback(ProfilerCallbackBase):
