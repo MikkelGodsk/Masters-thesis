@@ -41,4 +41,4 @@ export CUDA_LAUNCH_BLOCKING=1
 #export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 cd $HOME/msc/huggingface
-python finetune-llama-2-7b.py
+python finetune.py --model "meta-llama/Llama-2-7b-hf"

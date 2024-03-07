@@ -180,9 +180,9 @@ class TorchProfilerCallback(ProfilerCallbackBase):
 
 
 class WandBProfilerCallback(TorchProfilerCallback):
-    def __init__(self, logging_dir: str, *args, profile_epochs: List[int]=[], profile_n_steps:int=1, **kwargs):
+    def __init__(self, *args, profile_epochs: List[int]=[], profile_n_steps:int=1, **kwargs):
         super().__init__(
-            logging_dir, 
+            "", 
             *args, 
             profile_epochs=profile_epochs, 
             profile_n_steps=profile_n_steps, 
@@ -193,6 +193,38 @@ class WandBProfilerCallback(TorchProfilerCallback):
             verbose=False, 
             **kwargs
         )
+
+
+class WandBTimerCallback(TrainerCallback):
+    """
+        Written mostly by GitHub Copilot
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.train_start = 0
+        self.epoch_start = 0
+        self.step_start = 0
+
+    def on_train_begin(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+        self.train_start = time.time()
+
+    def on_train_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+        train_end = time.time()
+        wandb.log({"train_time": train_end - self.train_start, "real_time": time.time()})
+
+    def on_epoch_begin(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+        self.epoch_start = time.time()
+
+    def on_epoch_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+        epoch_end = time.time()
+        wandb.log({"epoch_time": epoch_end - self.epoch_start, "real_time": time.time()})
+    
+    def on_step_begin(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+        self.step_start = time.time()
+
+    def on_step_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+        step_end = time.time()
+        wandb.log({"step_time": step_end - self.step_start, "real_time": time.time()})
 
 
 class MemoryHistoryCallback(ProfilerCallbackBase):
