@@ -13,7 +13,7 @@
 #BSUB -R "rusage[mem=15GB]"
 
 ### -- set the job Name --
-#BSUB -J Finetune_opt-125m-lima
+#BSUB -J Finetune_opt-125m-lima_memory_comparison
 ### -- set walltime limit: hh:mm --  maximum 24 hours for GPU-queues right now
 #BSUB -W 6:00
 
@@ -40,4 +40,5 @@ export CUDA_LAUNCH_BLOCKING=1
 #export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 cd $HOME/msc/huggingface
-python finetune.py --max_new_tokens 1024
+python finetune.py --model_name "facebook/opt-125m" --max_new_tokens 1024 --use_lora False --use_quantization False --profile True
+python finetune.py --model_name "facebook/opt-125m" --max_new_tokens 1024 --use_lora True --use_quantization True --profile True

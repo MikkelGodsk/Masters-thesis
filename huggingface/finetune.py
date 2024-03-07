@@ -5,8 +5,6 @@ from trl import SFTTrainer
 from trl.trainer import DataCollatorForCompletionOnlyLM
 from datasets import load_dataset, Dataset
 import torch
-import wandb
-import numpy as np
 import os
 from time import time
 
@@ -17,6 +15,16 @@ from lima_utils import *
 SPECIAL_TOKENS_DICT = {} #{'pad_token': '</s>', 'bos_token': '<s>', 'eos_token': '</s>', 'unk_token': '<unk>', 'mask_token': '<mask>'}
 # Llama-2-7b has an issue. It seems like it might be the pad-token that causes it, but it's not clear... The issue: /opt/conda/conda-bld/pytorch_1708025845868/work/aten/src/ATen/native/cuda/Indexing.cu:1290: indexSelectLargeIndex: block: [97,0,0], thread: [95,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
 ## It seems to work to set pad_token = eos_token, as done here: https://discuss.huggingface.co/t/finetuning-quantised-llama-2-with-lora/49289
+
+def get_experiment_name(model_name:str, dataset_name:str, test:bool, use_lora:bool, use_quantization:bool):
+    name = ""
+    name += dataset_name.split('/')[1]
+    name += "-" + model_name.split('/')[1]
+    name += "-test" if test else ""
+    name += "-lora" if use_lora else ""
+    name += "-quant" if use_quantization else ""
+    name += f"-{int(time())}"
+    return name
 
 def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima", max_new_tokens: int=1024, num_epochs:int=2, use_lora:bool=True, use_quantization:bool=True, profile:bool=False, output_dir: str=None, test: bool=False, n_test_batches: int=10):
     """Finetunes the given model on the given dataset.
@@ -43,7 +51,7 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima", max_n
         Alternatively, you can pass the output directory as an argument to the function."""
     if OUTPUT_DIR is None: OUTPUT_DIR = output_dir
 
-    experiment_name = f"{dataset_name.split('/')[1]}-{model_name.split('/')[1]}" + ("-test" if test else "") + f"-{int(time())}"
+    experiment_name = get_experiment_name(model_name, dataset_name, test, use_lora, use_quantization)
 
     os.environ['WANDB_PROJECT'] = 'lima_ft_'+model_name.split('/')[1]
     os.environ['WANDB_DIR'] = os.path.join(OUTPUT_DIR, 'logs')                      # Becomes 'OUTPUT_DIR/logs/wandb'
@@ -62,15 +70,15 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima", max_n
         SPECIAL_TOKENS_DICT['pad_token'] = '</s>'
 
     # Model setup
-    lora_config = LoraConfig(
+    lora_config = LoraConfig(   # https://huggingface.co/docs/peft/developer_guides/lora
         r=16,
-        lora_alpha=32,
+        lora_alpha=8,
+        target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
         lora_dropout=0.05,
-        target_modules=["q_proj", "up_proj", "o_proj", "k_proj", "down_proj", "gate_proj", "v_proj"],
         bias="none",
         task_type="CAUSAL_LM",
     )
-    quantization_config = BitsAndBytesConfig(
+    quantization_config = BitsAndBytesConfig(   # Also explains LoRA: https://huggingface.co/docs/peft/developer_guides/quantization
         #load_in_8bit=True,
         load_in_4bit=True,
         bnb_4bit_compute_dtype=torch.bfloat16,
@@ -106,7 +114,7 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima", max_n
 
     # Trainer setup
     training_args = TrainingArguments(
-        num_train_epochs=10 if test else num_epochs,
+        num_train_epochs=num_epochs,
         per_device_train_batch_size=1 if test else 16,
         lr_scheduler_type="cosine",
         gradient_accumulation_steps=1,
