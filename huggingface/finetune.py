@@ -1,10 +1,9 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from transformers import TrainingArguments, BitsAndBytesConfig
-from peft import PeftModel  # https://discuss.huggingface.co/t/typeerror-llamaforcausallm-init-got-an-unexpected-keyword-argument-load-in-4bit/41245
+from peft import get_peft_model, prepare_model_for_kbit_training, LoraConfig  # https://huggingface.co/docs/peft/developer_guides/quantization  https://discuss.huggingface.co/t/typeerror-llamaforcausallm-init-got-an-unexpected-keyword-argument-load-in-4bit/41245
 from trl import SFTTrainer
 from trl.trainer import DataCollatorForCompletionOnlyLM
 from datasets import load_dataset, Dataset
-from peft import LoraConfig
 import torch
 import wandb
 import numpy as np
@@ -15,11 +14,17 @@ from profiler_callbacks import TorchProfilerCallback, MemoryHistoryCallback, Wan
 from lima_utils import *
 
 
-SPECIAL_TOKENS_DICT = {'pad_token': '<pad>', 'bos_token': '<s>', 'eos_token': '</s>', 'unk_token': '<unk>', 'mask_token': '<mask>'}
+SPECIAL_TOKENS_DICT = {} #{'pad_token': '</s>', 'bos_token': '<s>', 'eos_token': '</s>', 'unk_token': '<unk>', 'mask_token': '<mask>'}
+# Llama-2-7b has an issue. It seems like it might be the pad-token that causes it, but it's not clear... The issue: /opt/conda/conda-bld/pytorch_1708025845868/work/aten/src/ATen/native/cuda/Indexing.cu:1290: indexSelectLargeIndex: block: [97,0,0], thread: [95,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+## It seems to work to set pad_token = eos_token, as done here: https://discuss.huggingface.co/t/finetuning-quantised-llama-2-with-lora/49289
 
-
-def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima", max_new_tokens: int=2048, num_epochs:int=2, use_lora:bool=True, use_quantization:bool=True, profile:bool=False, output_dir: str=None, test: bool=False, n_test_batches: int=10):
+def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima", max_new_tokens: int=1024, num_epochs:int=2, use_lora:bool=True, use_quantization:bool=True, profile:bool=False, output_dir: str=None, test: bool=False, n_test_batches: int=10):
     """Finetunes the given model on the given dataset.
+    NOTE: If you get the error ```
+    /opt/conda/conda-bld/pytorch_1708025845868/work/aten/src/ATen/native/cuda/Indexing.cu:1290: indexSelectLargeIndex: block: [176,0,0], thread: [127,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+    ```
+    it might be because the pad_token is set to something other than the eos_token. This is a known issue with Llama-2-7b. The solution is to set pad_token = eos_token. This is done in the SPECIAL_TOKENS_DICT above.
+    Also it might be an issue with max_new_tokens being too long. For opt-125m, it seems to happen if max_new_tokens=4096, but not if max_new_tokens=1024.
 
     Args:
         model: The model to train. Can be "facebook/opt-125m", "meta-llama/Llama-2-7b-hf", "meta-llama/Llama-2-7b-chat-hf" etc...
@@ -47,15 +52,26 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima", max_n
     checkpoint_dir = os.path.join(OUTPUT_DIR, 'checkpoints', experiment_name)       # Becomes "OUTPUT_DIR/checkpoints/<experiment_name>"
     logging_dir = os.path.join(OUTPUT_DIR, 'logs', experiment_name)                 # Becomes "OUTPUT_DIR/logs/<experiment_name>"
 
+    # Setup tokens
+    if model_name == "facebook/opt-125m":
+        pass
+        #SPECIAL_TOKENS_DICT['pad_token'] = '<pad>'
+    elif model_name == "meta-llama/Llama-2-7b-hf":
+        SPECIAL_TOKENS_DICT['pad_token'] = '</s>'
+    elif model_name == "meta-llama/Llama-2-7b-chat-hf":
+        SPECIAL_TOKENS_DICT['pad_token'] = '</s>'
+
     # Model setup
     lora_config = LoraConfig(
         r=16,
         lora_alpha=32,
         lora_dropout=0.05,
+        target_modules=["q_proj", "up_proj", "o_proj", "k_proj", "down_proj", "gate_proj", "v_proj"],
         bias="none",
         task_type="CAUSAL_LM",
     )
     quantization_config = BitsAndBytesConfig(
+        #load_in_8bit=True,
         load_in_4bit=True,
         bnb_4bit_compute_dtype=torch.bfloat16,
         bnb_4bit_use_double_quant=True,
@@ -67,7 +83,10 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima", max_n
         quantization_config=quantization_config if use_quantization else None,
         device_map="auto",  # Not sure if the device map enables FSDP by default...
     )
-    model = PeftModel.from_pretrained(model, model_name, config=lora_config) if use_lora else model
+    model = prepare_model_for_kbit_training(model) if use_quantization else model
+    #model = PeftModel.from_pretrained(model, model_name, config=lora_config) if use_lora else model
+    model = get_peft_model(model, lora_config) if use_lora else model
+
     tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=cache_dir, **SPECIAL_TOKENS_DICT)
 
     # Dataset setup
@@ -97,7 +116,8 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima", max_n
         overwrite_output_dir=True,
         report_to="wandb",
         run_name=experiment_name,
-        save_strategy="epoch"
+        save_strategy="epoch",
+        fp16=True,
     )
     callbacks = (   # If profile is True, the setup is TorchProfilerCallback, MemoryHistoryCallback, and ExampleCallback. If profile is false, the setup is WandBProfilerCallback and ExampleCallback.
         [

@@ -4,19 +4,19 @@
 ### select a GPU queue
 #BSUB -q gpua100
 ### request the number of GPUs
-#BSUB -gpu "num=2:mode=exclusive_process"
+#BSUB -gpu "num=1:mode=exclusive_process"
 #BSUB -R "select[gpu80gb]"
 ### request the number of CPU cores (at least 4x the number of GPUs)
-#BSUB -n 8
+#BSUB -n 4
 ### we want to have this on a single node
 #BSUB -R "span[hosts=1]"
 ### we need to request CPU memory, too (note: this is per CPU core)
-#BSUB -R "rusage[mem=10GB]"
+#BSUB -R "rusage[mem=20GB]"
 
 ### -- set the job Name --
 #BSUB -J Finetune_llama-2-7b-lima
 ### -- set walltime limit: hh:mm --  maximum 24 hours for GPU-queues right now
-#BSUB -W 24:00
+#BSUB -W 4:00
 
 # please uncomment the following line and put in your e-mail address,
 # if you want to receive e-mail notifications on a non-default address
@@ -41,4 +41,4 @@ export CUDA_LAUNCH_BLOCKING=1
 #export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 cd $HOME/msc/huggingface
-python finetune.py --model "meta-llama/Llama-2-7b-hf"
+python finetune.py --model "meta-llama/Llama-2-7b-hf" --max_new_tokens 4096
