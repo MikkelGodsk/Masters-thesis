@@ -7,9 +7,25 @@ from datasets import load_dataset
 
 from src.lima_utils import TemplateFormatter
 
-def test_data_formatter_exact_match():
-    warnings.filterwarnings("error", category=UserWarning)
 
+def error_on_warning(func):
+    def func_wrapper(*args, **kwargs):
+        warnings.filterwarnings("error", category=UserWarning)
+        func(*args, **kwargs)
+        warnings.filterwarnings("ignore", category=UserWarning)
+    return func_wrapper
+
+
+def test_error_on_warning():
+    @error_on_warning
+    def func():
+        warnings.warn("This is a warning", UserWarning)
+    with pytest.raises(UserWarning):
+        func()
+
+
+@error_on_warning
+def test_data_formatter_exact_match():
     dataset_name:str="GAIR/lima"
     tokenizer_opt = AutoTokenizer.from_pretrained("facebook/opt-125m")
     tokenizer_llama = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
@@ -59,14 +75,11 @@ Not surprisingly, glial cells, stem cells and neurons also migrate during embryo
     assert opt_test_instruction == correct_opt_test_instruction
     assert llama_test_response == ""
     assert opt_test_response == ""
-    
-    warnings.filterwarnings("ignore", category=UserWarning)
 
 
+@error_on_warning
 def test_data_formatter_all_examples_no_warning():
     # Stress test: Can we use it without failing even once?
-    warnings.filterwarnings("error", category=UserWarning)
-
     dataset_name:str="GAIR/lima"
     tokenizer_opt = AutoTokenizer.from_pretrained("facebook/opt-125m")
     tokenizer_llama = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
@@ -91,5 +104,3 @@ def test_data_formatter_all_examples_no_warning():
     for example in opt_formatter.test_ds['text']:
         x_tokenized = opt_formatter.tokenizer(example, return_tensors="pt")
         opt_formatter.collator.torch_call([x_tokenized['input_ids'][0]])
-
-    warnings.filterwarnings("ignore", category=UserWarning)
