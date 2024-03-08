@@ -211,28 +211,37 @@ class WandBTimerCallback(TrainerCallback):
         self.epoch_start = 0
         self.step_start = 0
 
+    def setup(self):
+        wandb.define_metric("wall_time")
+        wandb.define_metric("epoch_time", step_metric="wall_time")
+        wandb.define_metric("train_time", step_metric="wall_time")
+        wandb.define_metric("step_time", step_metric="wall_time")
+        wandb.define_metric("epoch", step_metric="wall_time")
+        wandb.define_metric("step", step_metric="wall_time")
+
     def on_train_begin(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+        self.setup()   # It needs wandb.init to have been called, but it is only called in the trainer...
         self.train_start = time.time()
 
     def on_train_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
-        train_end = time.time()
-        wandb.log({"train_time": train_end - self.train_start})
+        now = time.time()
+        print(f"Training ended in {now - self.train_start} seconds")
 
     def on_epoch_begin(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
         self.epoch_start = time.time()
 
     def on_epoch_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
-        epoch_end = time.time()
-        wandb.log({"epoch_time": epoch_end - self.epoch_start})
-        wandb.log({"epoch": state.epoch})
+        now = time.time()
+        wandb.log({"epoch_time": now - self.epoch_start, "wall_time": now - self.train_start})
+        wandb.log({"epoch": state.epoch, "wall_time": now - self.train_start})
     
     def on_step_begin(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
         self.step_start = time.time()
 
     def on_step_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
-        step_end = time.time()
-        wandb.log({"step_time": step_end - self.step_start})
-        wandb.log({"step": state.global_step})
+        now = time.time()
+        wandb.log({"step_time": now - self.step_start, "wall_time": now - self.train_start})
+        wandb.log({"step": state.global_step, "wall_time": now - self.train_start})
 
 
 class MemoryHistoryCallback(ProfilerCallbackBase):
