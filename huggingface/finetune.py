@@ -18,7 +18,7 @@ SPECIAL_TOKENS_DICT = {} #{'pad_token': '</s>', 'bos_token': '<s>', 'eos_token':
 # Llama-2-7b has an issue. It seems like it might be the pad-token that causes it, but it's not clear... The issue: /opt/conda/conda-bld/pytorch_1708025845868/work/aten/src/ATen/native/cuda/Indexing.cu:1290: indexSelectLargeIndex: block: [97,0,0], thread: [95,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
 ## It seems to work to set pad_token = eos_token, as done here: https://discuss.huggingface.co/t/finetuning-quantised-llama-2-with-lora/49289
 
-def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima", max_new_tokens: int=1024, num_epochs:int=2, use_lora:bool=True, use_quantization:bool=True, profile:bool=False, output_dir: str=None, test: bool=False, n_test_batches: int=10):
+def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima", max_new_tokens: int=1024, num_epochs:int=2, use_lora:bool=False, use_quantization:bool=False, profile:bool=False, output_dir: str=None, test: bool=False, n_test_batches: int=10):
     """Finetunes the given model on the given dataset.
     NOTE: If you get the error ```
     /opt/conda/conda-bld/pytorch_1708025845868/work/aten/src/ATen/native/cuda/Indexing.cu:1290: indexSelectLargeIndex: block: [176,0,0], thread: [127,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
