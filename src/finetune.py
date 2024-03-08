@@ -40,6 +40,7 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima",
          use_lora:bool=False, use_quantization:bool=False, gradient_checkpointing:bool=True, 
          fp16:bool=False, tf32:bool=False,   # https://huggingface.co/docs/transformers/v4.20.1/en/perf_train_gpu_one#floating-data-types
          profile:bool=False, profiler_repeat_every_n_steps:int=-1,
+         resume_from_checkpoint:str=None,
          output_dir: str=None, 
          test: bool=False, n_test_batches: int=10):
     """Finetunes the given model on the given dataset.
@@ -51,10 +52,11 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima",
         num_epochs: The number of epochs to train for.
         use_lora: Whether to use LoRA for training.
         use_quantization: Whether to use quantization for training.
-        fp32: Whether to use fp32 floating data type.
+        fp16: Whether to use fp16 floating data type.
         tf32: Whether to use tf32 floating data type.
         profile: Whether to do a detailed profiling of the GPU memory and the stack during training. Note that a rudimentary GPU memory profiler is always sampling the first 5 steps of an epoch. 
         profiler_repeat_every_n_steps: Number of steps to repeat the profiling.
+        resume_from_checkpoint: If not None, the path to a checkpoint to resume training from (the entire experiment will simply proceed from there...).
         output_dir: The directory where the output will be stored.
         test: Whether we are running test code. If so, you may also want to set n_test_batches to a small number.
         n_test_batches: Number of batches used for testing if test is True. Set e.g. to 1 for overfitting to a single batch (to check if the model is set up correctly).
@@ -67,7 +69,10 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima",
         Alternatively, you can pass the output directory as an argument to the function."""
     if OUTPUT_DIR is None: OUTPUT_DIR = output_dir
 
-    experiment_name = get_experiment_name(model_name, dataset_name, test, use_lora, use_quantization, fp16, tf32)
+    if resume_from_checkpoint is None:
+        experiment_name = get_experiment_name(model_name, dataset_name, test, use_lora, use_quantization, fp16, tf32)
+    else:
+        experiment_name = resume_from_checkpoint
 
     os.environ['WANDB_PROJECT'] = 'lima_ft_'+model_name.split('/')[1]
     os.environ['WANDB_DIR'] = os.path.join(OUTPUT_DIR, 'logs')                      # Becomes 'OUTPUT_DIR/logs/wandb'
@@ -141,16 +146,16 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima",
         fp16=fp16,
         tf32=tf32,
     )
-    callbacks = (   # If profile is True, the setup is TorchProfilerCallback, MemoryHistoryCallback, and ExampleCallback. If profile is false, the setup is WandBProfilerCallback and ExampleCallback.
-        [
-            WandBProfilerCallback(profile_epochs=[], profile_n_steps=5, repeat_every_n_steps=profiler_repeat_every_n_steps),
-        ] if not profile else [
-            TorchProfilerCallback(logging_dir, profile_epochs=[], profile_n_steps=5, repeat_every_n_steps=profiler_repeat_every_n_steps), 
-            MemoryHistoryCallback(logging_dir, profile_epochs=[], profile_n_steps=5, repeat_every_n_steps=profiler_repeat_every_n_steps),
-        ]) + [
-            ExampleCallback(template_formatter),
-            WandBTimerCallback(),
-        ]
+    callbacks = []
+    if profile:
+        # If profile is True, the setup is TorchProfilerCallback, MemoryHistoryCallback, WandBTimerCallback, and ExampleCallback.
+        callbacks.append(TorchProfilerCallback(logging_dir, profile_epochs=[], profile_n_steps=5, repeat_every_n_steps=profiler_repeat_every_n_steps))
+        callbacks.append(MemoryHistoryCallback(logging_dir, profile_epochs=[], profile_n_steps=5, repeat_every_n_steps=profiler_repeat_every_n_steps))
+    else:
+        # If profile is false, the setup is WandBProfilerCallback,.WandBTimerCallback and ExampleCallback.
+        callbacks.append(WandBProfilerCallback(profile_epochs=[], profile_n_steps=5, repeat_every_n_steps=profiler_repeat_every_n_steps))
+    callbacks.append(ExampleCallback(template_formatter))
+    callbacks.append(WandBTimerCallback())
     
     trainer = SFTTrainer(
         model=model,
@@ -162,7 +167,7 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima",
         max_seq_length=max_seq_length,
         callbacks=callbacks,
     )
-    trainer.train()
+    trainer.train(resume_from_checkpoint=resume_from_checkpoint is not None)
 
 
 if __name__ == '__main__':

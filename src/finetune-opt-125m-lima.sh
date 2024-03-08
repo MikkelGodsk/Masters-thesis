@@ -36,9 +36,9 @@ module load cudnn/v8.9.1.23-prod-cuda-12.X
 conda activate msc
 export OUTPUT_DIR_MSC=/work3/s184399/msc   # Then use os.getenv("OUTPUT_DIR") in the script
 export CUDA_LAUNCH_BLOCKING=1
+cd $HOME/msc/src
 
 #export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
-cd $HOME/msc/huggingface
 #python finetune.py --model_name "facebook/opt-125m" --max_seq_length 1024 --use_lora False --use_quantization False --profile True -- tf32 True
 python finetune.py --model_name "facebook/opt-125m" --max_seq_length 1024 --use_lora True --use_quantization True --profile True --tf32 True

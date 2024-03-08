@@ -4,10 +4,8 @@ from tqdm import tqdm
 import numpy as np
 from functools import partial
 from trl.trainer import DataCollatorForCompletionOnlyLM
+import torch
 
-
-instruction_template = "### Human:"
-response_template = "### Assistant:"
 
 def filter_example(x):
     return x["source"] != "multi_turn"
@@ -51,12 +49,6 @@ class TemplateFormatter:   # If more datasets enter the game, we should use inhe
             response_template=response_template
         )
 
-    def format_prompt(prompt):
-        return prompt.replace(instruction_template, '').replace(response_template, '')
-
-    def format_completion(completion):
-        return completion.split(response_template)[1]
-
     def process_lima(self):
         train_ds = self.ds['train'].filter(filter_example).map(self.data_processor, **self.map_kwargs)
         test_ds = self.ds['test'].filter(filter_example).map(self.data_processor, **self.map_kwargs)
@@ -77,12 +69,12 @@ class TemplateFormatter:   # If more datasets enter the game, we should use inhe
         return instruction, response
     
     def remove_prompt_from_completion(self, tokenized_prompt, tokenized_completion):
-        return tokenized_completion[len(tokenized_prompt):]
+        skip_tokens = tokenized_prompt.shape[-1]
+        return tokenized_completion[..., skip_tokens:]
 
 
-# Define training args
 class ExampleCallback(TrainerCallback):   # Source: https://docs.wandb.ai/guides/integrations/huggingface#custom-logging-log-and-view-evaluation-samples-during-training
-    def __init__(self, template_formatter, *args, max_new_tokens=1024, log_n_examples=1, **kwargs):
+    def __init__(self, template_formatter, *args, max_new_tokens=1024, log_n_examples=10, **kwargs):
         super().__init__(*args, **kwargs)
         self.train_ds = template_formatter.train_ds
         self.eval_ds = template_formatter.test_ds
@@ -97,31 +89,27 @@ class ExampleCallback(TrainerCallback):   # Source: https://docs.wandb.ai/guides
         model = kwargs["model"]
         tokenizer = kwargs["tokenizer"]
         
-        model.eval()
+        with torch.no_grad():
+            # Sample training examples (mostly for debugging purposes...)
+            text_table = wandb.Table(columns=["prompt", "suggested completion", "completion"])
+            for example in tqdm(self.train_ds[np.random.randint(self.len_train_ds, size=self.log_n_examples)]['text'], desc="Sampling training examples"):
+                prompt, suggested_completion = self.template_formatter.get_instruction_and_response(example)
+                tokenized_prompt = tokenizer.encode(prompt, return_tensors="pt")
+                tokenized_completion = model.generate(tokenized_prompt.cuda(), max_new_tokens=self.max_new_tokens)
+                tokenized_completion = self.template_formatter.remove_prompt_from_completion(tokenized_prompt, tokenized_completion)
+                completion = tokenizer.decode(token_ids=tokenized_completion.squeeze(0), skip_special_tokens=False)
+                text_table.add_data(prompt, suggested_completion, completion)
+            wandb.log({"Training examples": text_table})
+            
+            # Evaluate on eval set
+            eval_table = wandb.Table(columns=["prompt", "completion"])
+            for prompt in tqdm(self.eval_ds[np.random.randint(self.len_eval_ds, size=self.log_n_examples)]['text'], desc="Evaluating model on eval set"):
+                prompt, _ = self.template_formatter.get_instruction_and_response(prompt)
+                tokenized_prompt = tokenizer.encode(prompt, return_tensors="pt")
+                tokenized_completion = model.generate(tokenized_prompt.cuda(), max_new_tokens=self.max_new_tokens)
+                tokenized_completion = self.template_formatter.remove_prompt_from_completion(tokenized_prompt, tokenized_completion)
+                completion = tokenizer.decode(token_ids=tokenized_completion.squeeze(0), skip_special_tokens=False)  # Keep in mind that the prompt is included in the completion
+                eval_table.add_data(prompt, completion)
+            wandb.log({"eval": eval_table})
 
-        # Sample training examples (mostly for debugging purposes...)
-        text_table = wandb.Table(columns=["prompt", "suggested completion", "completion"])
-        for example in tqdm(self.train_ds[np.random.randint(self.len_train_ds, size=self.log_n_examples)], desc="Sampling training examples"):
-            prompt, suggested_completion = self.template_formatter.get_instruction_and_response(example)
-            tokenized_prompt = tokenizer.encode(prompt, return_tensors="pt")
-            tokenized_completion = model.generate(tokenized_prompt.cuda(), max_new_tokens=self.max_new_tokens)
-            print(tokenized_completion)
-            tokenized_completion = self.template_formatter.remove_prompt_from_completion(tokenized_prompt, tokenized_completion)
-            print(tokenized_completion)
-            completion = tokenizer.decode(token_ids=tokenized_completion.squeeze(0), skip_special_tokens=False)
-            text_table.add_data(prompt, suggested_completion, completion)
-        wandb.log({"Training examples": text_table})
-        
-        # Evaluate on eval set
-        eval_table = wandb.Table(columns=["prompt", "completion"])
-        for prompt in tqdm(self.eval_ds[np.random.randint(self.len_eval_ds, size=self.log_n_examples)], desc="Evaluating model on eval set"):
-            prompt, _ = self.template_formatter.get_instruction_and_response(prompt)
-            tokenized_prompt = tokenizer.encode(prompt, return_tensors="pt")
-            tokenized_completion = model.generate(tokenized_prompt.cuda(), max_new_tokens=self.max_new_tokens)
-            tokenized_completion = self.template_formatter.remove_prompt_from_completion(tokenized_prompt, tokenized_completion)
-            completion = tokenizer.decode(token_ids=tokenized_completion.squeeze(0), skip_special_tokens=False)  # Keep in mind that the prompt is included in the completion
-            eval_table.add_data(prompt, completion)
-        wandb.log({"eval": eval_table})
-
-        model.train()
 
