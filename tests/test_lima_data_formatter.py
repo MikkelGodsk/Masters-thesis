@@ -7,7 +7,7 @@ from datasets import load_dataset
 
 from src.lima_utils import TemplateFormatter
 
-def test_data_formatter():
+def test_data_formatter_exact_match():
     warnings.filterwarnings("error", category=UserWarning)
 
     dataset_name:str="GAIR/lima"
@@ -60,4 +60,36 @@ Not surprisingly, glial cells, stem cells and neurons also migrate during embryo
     assert llama_test_response == ""
     assert opt_test_response == ""
     
+    warnings.filterwarnings("ignore", category=UserWarning)
+
+
+def test_data_formatter_all_examples_no_warning():
+    # Stress test: Can we use it without failing even once?
+    warnings.filterwarnings("error", category=UserWarning)
+
+    dataset_name:str="GAIR/lima"
+    tokenizer_opt = AutoTokenizer.from_pretrained("facebook/opt-125m")
+    tokenizer_llama = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
+    ds = load_dataset(dataset_name, 'plain_text')
+
+    # NOTE: The instruction templates can be read from `tokenizer.default_chat_template`
+    llama_formatter = TemplateFormatter(ds, tokenizer_llama)
+    opt_formatter = TemplateFormatter(ds, tokenizer_opt)
+
+    for example in llama_formatter.train_ds['text']:
+        x_tokenized = llama_formatter.tokenizer(example, return_tensors="pt")
+        llama_formatter.collator.torch_call([x_tokenized['input_ids'][0]])
+
+    for example in opt_formatter.train_ds['text']:
+        x_tokenized = opt_formatter.tokenizer(example, return_tensors="pt")
+        opt_formatter.collator.torch_call([x_tokenized['input_ids'][0]])
+
+    for example in llama_formatter.test_ds['text']:
+        x_tokenized = llama_formatter.tokenizer(example, return_tensors="pt")
+        llama_formatter.collator.torch_call([x_tokenized['input_ids'][0]])
+                            
+    for example in opt_formatter.test_ds['text']:
+        x_tokenized = opt_formatter.tokenizer(example, return_tensors="pt")
+        opt_formatter.collator.torch_call([x_tokenized['input_ids'][0]])
+
     warnings.filterwarnings("ignore", category=UserWarning)
