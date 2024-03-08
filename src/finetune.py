@@ -2,6 +2,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from transformers import TrainingArguments, BitsAndBytesConfig
 from peft import get_peft_model, prepare_model_for_kbit_training, LoraConfig  # https://huggingface.co/docs/peft/developer_guides/quantization  https://discuss.huggingface.co/t/typeerror-llamaforcausallm-init-got-an-unexpected-keyword-argument-load-in-4bit/41245
 from trl import SFTTrainer
+from transformers.integrations import WandbCallback
 from trl.trainer import DataCollatorForCompletionOnlyLM
 from datasets import load_dataset, Dataset
 import torch
@@ -10,30 +11,6 @@ from time import time
 
 from profiler_callbacks import TorchProfilerCallback, MemoryHistoryCallback, WandBProfilerCallback, WandBTimerCallback
 from lima_utils import *
-
-"""
-    NOTE ON MEMORY:
-    - If the sequence length is large and the batch size is large, then the cross-entropy computation may be the most expensive operation! 
-    E.g. Opt-125m:
-        a head with 50272 output features x 16 batch size x 1024 sequence length x 4 bytes per float = 3.294.625.792 bytes = 3.29 GB (and that's just the logit size!)
-        the model's hidden dimensions are 768... so the hidden states are 768 x 16 x 1024 x 4 = 6.29 MB...
-
-    NOTE ON ERRORS:
-    - If you get the error ```/opt/conda/conda-bld/pytorch_1708025845868/work/aten/src/ATen/native/cuda/Indexing.cu:1290: indexSelectLargeIndex: block: [176,0,0], thread: [127,0,0] Assertion `srcIndex < srcSelectDimSize` failed.```
-    it might be because the pad_token is set to something other than the eos_token. This is a known issue with Llama-2-7b. The solution is to set pad_token = eos_token. This is done in the SPECIAL_TOKENS_DICT above.
-    Also it might be an issue with max_seq_length being too long. For opt-125m, it seems to happen if max_seq_length=4096, but not if max_seq_length=1024.
-
-    - If you get the UserWarning that "### Human: " could not be found, maybe the formatting of the dataset is wrong. It seems like the DataCollatorForCompletionOnlyLM is not able to find the instruction and response templates. 
-    This may also sometimes be fixed by setting max_seq_length=2048.
-    
-    NOTE ON Data collator:
-    - The DataCollatorForCompletionOnlyLM is used to mask the response in the dataset. It is used to tell the model how mask out the response, when given the entire sequence.
-"""
-
-
-SPECIAL_TOKENS_DICT = {} #{'pad_token': '</s>', 'bos_token': '<s>', 'eos_token': '</s>', 'unk_token': '<unk>', 'mask_token': '<mask>'}
-# Llama-2-7b has an issue. It seems like it might be the pad-token that causes it, but it's not clear... The issue: /opt/conda/conda-bld/pytorch_1708025845868/work/aten/src/ATen/native/cuda/Indexing.cu:1290: indexSelectLargeIndex: block: [97,0,0], thread: [95,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
-## It seems to work to set pad_token = eos_token, as done here: https://discuss.huggingface.co/t/finetuning-quantised-llama-2-with-lora/49289
 
 
 def get_experiment_name(
@@ -57,7 +34,9 @@ def get_experiment_name(
     name += f"-{int(time())}"
     return name
 
-def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima", max_seq_length: int=1024, num_epochs:int=2, 
+def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima", 
+         max_seq_length: int=1024, 
+         num_epochs:int=2, 
          use_lora:bool=False, use_quantization:bool=False, gradient_checkpointing:bool=True, 
          fp16:bool=False, tf32:bool=False,   # https://huggingface.co/docs/transformers/v4.20.1/en/perf_train_gpu_one#floating-data-types
          profile:bool=False, profiler_repeat_every_n_steps:int=-1,
@@ -98,9 +77,9 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima", max_s
     logging_dir = os.path.join(OUTPUT_DIR, 'logs', experiment_name)                 # Becomes "OUTPUT_DIR/logs/<experiment_name>"
 
     # Tokenizer setup
+    SPECIAL_TOKENS_DICT = {}
     if model_name == "facebook/opt-125m":
         pass
-        #SPECIAL_TOKENS_DICT['pad_token'] = '<pad>'
     elif model_name == "meta-llama/Llama-2-7b-hf":
         SPECIAL_TOKENS_DICT['pad_token'] = '</s>'
     elif model_name == "meta-llama/Llama-2-7b-chat-hf":
@@ -136,12 +115,11 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima", max_s
     
 
     # Dataset setup
-    collator = DataCollatorForCompletionOnlyLM(instruction_template=instruction_template, response_template=response_template, tokenizer=tokenizer, mlm=False)  # Data collator tells how to split and mask the dataset (in teacher forcing)
     ds = load_dataset(dataset_name, 'plain_text', cache_dir=cache_dir)
-    train_ds = process_ds(ds["train"])
+    template_formatter = TemplateFormatter(ds, tokenizer)
+    train_ds, test_ds = template_formatter.train_ds, template_formatter.test_ds
     if test: 
         train_ds = Dataset.from_dict(train_ds[0:n_test_batches])
-    eval_ds = ds["test"]["conversations"]
 
     # Trainer setup
     if tf32: 
@@ -170,7 +148,7 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima", max_s
             TorchProfilerCallback(logging_dir, profile_epochs=[], profile_n_steps=5, repeat_every_n_steps=profiler_repeat_every_n_steps), 
             MemoryHistoryCallback(logging_dir, profile_epochs=[], profile_n_steps=5, repeat_every_n_steps=profiler_repeat_every_n_steps),
         ]) + [
-            ExampleCallback(train_ds, eval_ds, max_new_tokens=max_seq_length),
+            ExampleCallback(template_formatter),
             WandBTimerCallback(),
         ]
     
@@ -178,7 +156,7 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima", max_s
         model=model,
         tokenizer=tokenizer,
         args=training_args,
-        data_collator=collator,
+        data_collator=template_formatter.collator,
         dataset_text_field="text",
         train_dataset=train_ds,
         max_seq_length=max_seq_length,
