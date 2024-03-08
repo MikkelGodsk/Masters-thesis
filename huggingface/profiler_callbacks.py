@@ -41,10 +41,11 @@ class ProfilerCallbackBase(TrainerCallback):
 
         Docs: For HuggingFace callbacks, see https://huggingface.co/docs/transformers/main_classes/callback#transformers.TrainerCallback
     """
-    def __init__(self, logging_dir: str, *args, profile_epochs: List[int]=[], profile_n_steps:int=1, **kwargs):
+    def __init__(self, logging_dir: str, *args, profile_epochs: List[int]=[], profile_n_steps:int=1, repeat_every_n_steps=-1, **kwargs):
         super().__init__(*args, **kwargs)
         self.profile_epochs = profile_epochs
         self.profile_n_steps = profile_n_steps
+        self.repeat_every_n_steps = repeat_every_n_steps
         self.step_counter = 0
         self.is_running = False
         self.profile_dir = os.path.join(logging_dir, "profile")
@@ -59,8 +60,8 @@ class ProfilerCallbackBase(TrainerCallback):
         if self.is_running:
             epoch = int(floor(epoch))
             timestamp = get_timestamp()
-            epoch_str = f"epoch_-{epoch}" if epoch>0 else ""
-            file_identifier = f"{epoch_str}{timestamp}"
+            epoch_str = f"epoch_{epoch}" if epoch>0 else ""
+            file_identifier = f"{epoch_str}-{timestamp}"
             self.stop(epoch, file_identifier)
             self.is_running = False
 
@@ -83,6 +84,11 @@ class ProfilerCallbackBase(TrainerCallback):
         if (floor(state.epoch) in self.profile_epochs) or (len(self.profile_epochs) == 0):    # state.epoch is a float, not an int...
             self.start_()
             self.step_counter = 0
+
+    def on_step_begin(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+        if (not self.is_running) and (self.repeat_every_n_steps >= 0):
+            if self.step_counter % self.repeat_every_n_steps == 0:
+                self.start_()
 
     def on_step_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
         if (floor(state.epoch) in self.profile_epochs) or (len(self.profile_epochs) == 0):   # state.epoch is a float, not an int...
@@ -180,7 +186,7 @@ class TorchProfilerCallback(ProfilerCallbackBase):
 
 
 class WandBProfilerCallback(TorchProfilerCallback):
-    def __init__(self, *args, profile_epochs: List[int]=[], profile_n_steps:int=1, **kwargs):
+    def __init__(self, *args, profile_epochs: List[int]=[], profile_n_steps:int=5, **kwargs):
         super().__init__(
             "", 
             *args, 
@@ -205,31 +211,43 @@ class WandBTimerCallback(TrainerCallback):
         self.epoch_start = 0
         self.step_start = 0
 
+    def setup(self):
+        wandb.define_metric("wall_time")
+        wandb.define_metric("epoch_time", step_metric="wall_time")
+        wandb.define_metric("train_time", step_metric="wall_time")
+        wandb.define_metric("step_time", step_metric="wall_time")
+        wandb.define_metric("epoch", step_metric="wall_time")
+        wandb.define_metric("step", step_metric="wall_time")
+
     def on_train_begin(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+        self.setup()   # It needs wandb.init to have been called, but it is only called in the trainer...
         self.train_start = time.time()
 
     def on_train_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
-        train_end = time.time()
-        wandb.log({"train_time": train_end - self.train_start, "real_time": time.time()})
+        now = time.time()
+        print(f"Training ended in {now - self.train_start} seconds")
 
     def on_epoch_begin(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
         self.epoch_start = time.time()
 
     def on_epoch_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
-        epoch_end = time.time()
-        wandb.log({"epoch_time": epoch_end - self.epoch_start, "real_time": time.time()})
+        now = time.time()
+        wandb.log({"epoch_time": now - self.epoch_start, "wall_time": now - self.train_start})
+        wandb.log({"epoch": state.epoch, "wall_time": now - self.train_start})
     
     def on_step_begin(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
         self.step_start = time.time()
 
     def on_step_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
-        step_end = time.time()
-        wandb.log({"step_time": step_end - self.step_start, "real_time": time.time()})
+        now = time.time()
+        wandb.log({"step_time": now - self.step_start, "wall_time": now - self.train_start})
+        wandb.log({"step": state.global_step, "wall_time": now - self.train_start})
 
 
 class MemoryHistoryCallback(ProfilerCallbackBase):
     """
     To view the memory trace, go to https://pytorch.org/memory_viz and drag in the pickle file.
+    NOTE: The stack trace grows upwards here!
     
     You might get this issue: 
     ```
@@ -258,7 +276,7 @@ class MemoryHistoryCallback(ProfilerCallbackBase):
         with open(file_name, "wb") as f:
             pickle.dump(s, f)
         torch.cuda.memory._record_memory_history(enabled=None)
-        print(f"CUDA memory recording saved to {file_name} (go to https://pytorch.org/memory_viz to read this file)\n\n")
+        print(f"CUDA memory recording saved to {file_name} (go to https://pytorch.org/memory_viz to read this file - note that the stack grows upwards in the trace!)\n\n")
 
 
 # Apparently the rule in Python is to define the functions before they're called, not before they're used in another function...
