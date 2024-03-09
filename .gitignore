@@ -27,3 +27,4 @@ __pycache__
 *.egg
 profile
 .pytest_cache
+old_but_gold

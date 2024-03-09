@@ -73,6 +73,7 @@ class TemplateFormatter:   # If more datasets enter the game, we should use inhe
         return tokenized_completion[..., skip_tokens:]
 
 
+# If more datasets enter the game, put this in a "trainer_callbacks.py" file alongside the other callbacks for profiling...
 class ExampleCallback(TrainerCallback):   # Source: https://docs.wandb.ai/guides/integrations/huggingface#custom-logging-log-and-view-evaluation-samples-during-training
     def __init__(self, template_formatter, *args, max_new_tokens=1024, log_n_examples=10, **kwargs):
         super().__init__(*args, **kwargs)
@@ -91,7 +92,7 @@ class ExampleCallback(TrainerCallback):   # Source: https://docs.wandb.ai/guides
         
         with torch.no_grad():
             # Sample training examples (mostly for debugging purposes...)
-            text_table = wandb.Table(columns=["prompt", "suggested completion", "completion"])
+            text_table = wandb.Table(columns=["prompt", "suggested completion", "model's completion"])
             for example in tqdm(self.train_ds[np.random.randint(self.len_train_ds, size=self.log_n_examples)]['text'], desc="Sampling training examples"):
                 prompt, suggested_completion = self.template_formatter.get_instruction_and_response(example)
                 tokenized_prompt = tokenizer.encode(prompt, return_tensors="pt")
@@ -102,7 +103,7 @@ class ExampleCallback(TrainerCallback):   # Source: https://docs.wandb.ai/guides
             wandb.log({"Training examples": text_table})
             
             # Evaluate on eval set
-            eval_table = wandb.Table(columns=["prompt", "completion"])
+            eval_table = wandb.Table(columns=["prompt", "model's completion"])
             for prompt in tqdm(self.eval_ds[np.random.randint(self.len_eval_ds, size=self.log_n_examples)]['text'], desc="Evaluating model on eval set"):
                 prompt, _ = self.template_formatter.get_instruction_and_response(prompt)
                 tokenized_prompt = tokenizer.encode(prompt, return_tensors="pt")

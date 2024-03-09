@@ -21,7 +21,7 @@ def get_experiment_name(
         use_quantization:bool,
         fp32:bool,
         tf32:bool,
-
+        backprop_trick:bool,
     ):
     name = ""
     name += dataset_name.split('/')[1]
@@ -31,6 +31,7 @@ def get_experiment_name(
     name += "-quant" if use_quantization else ""
     name += "-amp_fp32" if fp32 else ""
     name += "-amp_tf32" if tf32 else ""
+    name += "-backprop_trick" if backprop_trick else ""
     name += f"-{int(time())}"
     return name
 
@@ -42,7 +43,8 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima",
          profile:bool=False, profiler_repeat_every_n_steps:int=-1,
          resume_from_checkpoint:str=None,
          output_dir: str=None, 
-         test: bool=False, n_test_batches: int=10):
+         test: bool=False, n_test_batches: int=10,
+         backprop_trick:bool=False):
     """Finetunes the given model on the given dataset.
 
     Args:
@@ -70,7 +72,7 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima",
     if OUTPUT_DIR is None: OUTPUT_DIR = output_dir
 
     if resume_from_checkpoint is None:
-        experiment_name = get_experiment_name(model_name, dataset_name, test, use_lora, use_quantization, fp16, tf32)
+        experiment_name = get_experiment_name(model_name, dataset_name, test, use_lora, use_quantization, fp16, tf32, backprop_trick)
     else:
         experiment_name = resume_from_checkpoint
 
@@ -118,6 +120,13 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima",
     model = prepare_model_for_kbit_training(model) if use_quantization else model
     model = get_peft_model(model, lora_config) if use_lora else model
     
+    # Setup backprop trick if needed
+    if backprop_trick:
+        from backprop_trick import MotherOptimizer
+        optimizer = MotherOptimizer(model.parameters(), torch.optim.Adam, lr=1e-3)
+        for param_group in optimizer.param_groups:
+            param_group['initial_lr'] = 1e-3
+        lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)
 
     # Dataset setup
     ds = load_dataset(dataset_name, 'plain_text', cache_dir=cache_dir)
@@ -166,6 +175,7 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima",
         train_dataset=train_ds,
         max_seq_length=max_seq_length,
         callbacks=callbacks,
+        optimizers=(optimizer, lr_scheduler) if backprop_trick else (None, None),
     )
     trainer.train(resume_from_checkpoint=resume_from_checkpoint is not None)
 
