@@ -16,7 +16,7 @@
 ### -- set the job Name --
 #BSUB -J Finetune_llama-2-7b-lima
 ### -- set walltime limit: hh:mm --  maximum 24 hours for GPU-queues right now
-#BSUB -W 4:00
+#BSUB -W 24:00
 
 # please uncomment the following line and put in your e-mail address,
 # if you want to receive e-mail notifications on a non-default address
@@ -41,4 +41,4 @@ cd $HOME/msc/src
 
 #export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
-python finetune.py --model "meta-llama/Llama-2-7b-hf" --max_seq_length 2048 --tf32 True --use_lora True --use_quantization True
+python finetune.py --model "meta-llama/Llama-2-7b-hf" --num_epochs 15 --max_seq_length 2048 --tf32 True --use_lora True --use_quantization True
