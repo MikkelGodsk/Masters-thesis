@@ -163,7 +163,7 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima",
     else:
         # If profile is false, the setup is WandBProfilerCallback,.WandBTimerCallback and ExampleCallback.
         callbacks.append(WandBProfilerCallback(profile_epochs=[], profile_n_steps=5, repeat_every_n_steps=profiler_repeat_every_n_steps))
-    callbacks.append(ExampleCallback(template_formatter))
+    callbacks.append(ExampleCallback(template_formatter, max_seq_length=max_seq_length))
     callbacks.append(WandBTimerCallback())
     
     trainer = SFTTrainer(

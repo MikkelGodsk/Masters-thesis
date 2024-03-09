@@ -75,12 +75,12 @@ class TemplateFormatter:   # If more datasets enter the game, we should use inhe
 
 # If more datasets enter the game, put this in a "trainer_callbacks.py" file alongside the other callbacks for profiling...
 class ExampleCallback(TrainerCallback):   # Source: https://docs.wandb.ai/guides/integrations/huggingface#custom-logging-log-and-view-evaluation-samples-during-training
-    def __init__(self, template_formatter, *args, max_new_tokens=1024, log_n_examples=10, **kwargs):
+    def __init__(self, template_formatter, *args, max_seq_length=1024, log_n_examples=10, **kwargs):
         super().__init__(*args, **kwargs)
         self.train_ds = template_formatter.train_ds
         self.eval_ds = template_formatter.test_ds
         self.template_formatter = template_formatter
-        self.max_new_tokens = max_new_tokens
+        self.max_seq_length = max_seq_length
         self.len_train_ds = len(self.train_ds)
         self.len_eval_ds = len(self.eval_ds)
         self.log_n_examples = log_n_examples
@@ -96,7 +96,8 @@ class ExampleCallback(TrainerCallback):   # Source: https://docs.wandb.ai/guides
             for example in tqdm(self.train_ds[np.random.randint(self.len_train_ds, size=self.log_n_examples)]['text'], desc="Sampling training examples"):
                 prompt, suggested_completion = self.template_formatter.get_instruction_and_response(example)
                 tokenized_prompt = tokenizer.encode(prompt, return_tensors="pt")
-                tokenized_completion = model.generate(tokenized_prompt.cuda(), max_new_tokens=self.max_new_tokens)
+                if tokenized_prompt[..., -1] == tokenizer.sep_token_id: tokenized_prompt = tokenized_prompt[..., :-1]  # Remove the separator token
+                tokenized_completion = model.generate(tokenized_prompt.cuda(), max_length=self.max_seq_length)
                 tokenized_completion = self.template_formatter.remove_prompt_from_completion(tokenized_prompt, tokenized_completion)
                 completion = tokenizer.decode(token_ids=tokenized_completion.squeeze(0), skip_special_tokens=False)
                 text_table.add_data(prompt, suggested_completion, completion)
@@ -107,7 +108,8 @@ class ExampleCallback(TrainerCallback):   # Source: https://docs.wandb.ai/guides
             for prompt in tqdm(self.eval_ds[np.random.randint(self.len_eval_ds, size=self.log_n_examples)]['text'], desc="Evaluating model on eval set"):
                 prompt, _ = self.template_formatter.get_instruction_and_response(prompt)
                 tokenized_prompt = tokenizer.encode(prompt, return_tensors="pt")
-                tokenized_completion = model.generate(tokenized_prompt.cuda(), max_new_tokens=self.max_new_tokens)
+                if tokenized_prompt[..., -1] == tokenizer.sep_token_id: tokenized_prompt = tokenized_prompt[..., :-1]  # Remove the separator token
+                tokenized_completion = model.generate(tokenized_prompt.cuda(), max_length=self.max_seq_length)
                 tokenized_completion = self.template_formatter.remove_prompt_from_completion(tokenized_prompt, tokenized_completion)
                 completion = tokenizer.decode(token_ids=tokenized_completion.squeeze(0), skip_special_tokens=False)  # Keep in mind that the prompt is included in the completion
                 eval_table.add_data(prompt, completion)
