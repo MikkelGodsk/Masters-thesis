@@ -20,6 +20,42 @@ def process_example(x, tokenizer):
 
 
 class TemplateFormatter:   # If more datasets enter the game, we should use inheritance...
+    """Ensures that the data has the correct format for the TRL library.
+    
+    To ensure compatibility with the TRL library, we need to pass the trainer the class's `.train_ds` and `.test_ds`.
+
+    Example:
+        To ensure correct formatting of the dataset, use the TemplateFormatter like this::
+
+            tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=cache_dir)   # Potentially with additional special tokens
+            ds = load_dataset("lima", "plain_text")
+            template_formatter = TemplateFormatter(ds, tokenizer)
+            train_ds, test_ds = template_formatter.train_ds, template_formatter.test_ds    # These are the datasets to pass the SFTTrainer
+            ...
+            trainer = SFTTrainer(
+                ...
+                train_dataset=train_ds,
+                ...
+            )
+        
+    
+    Attributes:
+        ds (datasets.DatasetDict): The dataset.
+        tokenizer (transformers.PreTrainedTokenizer): The tokenizer.
+        instruction_template (str): The instruction template.
+        response_template (str): The response template.
+        map_kwargs (dict): The kwargs for the `map` method.
+        data_processor (function): The function to process the data.
+        train_ds (datasets.Dataset): The training dataset.
+        test_ds (datasets.Dataset): The test dataset.
+        collator (trl.trainer.DataCollatorForCompletionOnlyLM): The data collator.
+
+    Methods:
+        process_lima: Process the dataset.
+        get_instruction_and_response: Get the instruction and response from a given example.
+        remove_prompt_from_completion: Remove the prompt from the completion.
+        correct_tokenized_prompt: Put a prompt in the correct format even after splitting...
+    """
     def __init__(self, ds, tokenizer):
         self.ds = ds
         self.tokenizer = tokenizer
@@ -55,8 +91,13 @@ class TemplateFormatter:   # If more datasets enter the game, we should use inhe
         return train_ds, test_ds
     
     def get_instruction_and_response(self, x):
-        """
-            Mostly for testing, the callback and as an example...
+        """Splits the input into an instruction and a response using the data collator - i.e. in the same way as the SFTTrainer does it.
+
+        Args:
+            x (str or dict): The input.
+
+        Returns:
+            tuple: The instruction and the response (both as strings).
         """
         if isinstance(x, str):
             x = {'text': [x]}
@@ -69,13 +110,41 @@ class TemplateFormatter:   # If more datasets enter the game, we should use inhe
         return instruction, response
     
     def remove_prompt_from_completion(self, tokenized_prompt, tokenized_completion):
+        """Takes a completion (which includes the prompt), and then removes the prompt from it.
+
+        Args:
+            tokenized_prompt (torch.Tensor): The tokenized prompt.
+            tokenized_completion (torch.Tensor): The tokenized completion.
+        
+        Returns:
+            torch.Tensor: The tokenized completion without the prompt.
+        """
         skip_tokens = tokenized_prompt.shape[-1]
         return tokenized_completion[..., skip_tokens:]
 
 
 # If more datasets enter the game, put this in a "trainer_callbacks.py" file alongside the other callbacks for profiling...
 class ExampleCallback(TrainerCallback):   # Source: https://docs.wandb.ai/guides/integrations/huggingface#custom-logging-log-and-view-evaluation-samples-during-training
+    """A callback for the `Trainer` the model responses to randomly selected training examples and eval examples.
+
+    Attributes:
+        template_formatter (TemplateFormatter): The template formatter.
+        max_seq_length (int): The maximum sequence length.
+        log_n_examples (int): The number of examples to log.
+
+    Methods:
+        on_log: Logs the model responses to randomly selected training examples and eval examples.
+    """
     def __init__(self, template_formatter, *args, max_seq_length=1024, log_n_examples=10, **kwargs):
+        """Initializes the callback.
+        
+        Args:
+            template_formatter (TemplateFormatter): The template formatter.
+            *args: Any residual arguments we don't need in the callback.
+            max_seq_length (int): The maximum sequence length.
+            log_n_examples (int): The number of examples to log.
+            **kwargs: Any residual keyword arguments we don't need in the callback.
+        """
         super().__init__(*args, **kwargs)
         self.train_ds = template_formatter.train_ds
         self.eval_ds = template_formatter.test_ds
@@ -86,6 +155,15 @@ class ExampleCallback(TrainerCallback):   # Source: https://docs.wandb.ai/guides
         self.log_n_examples = log_n_examples
 
     def on_log(self, args, state, control, logs=None, **kwargs):
+        """Logs the model responses to randomly selected training examples and eval examples.
+
+        Args:
+            args: The arguments.
+            state: The state.
+            control: The control.
+            logs: The logs.
+            **kwargs: The keyword arguments.
+        """
         # Kwargs contains keys: ['model', 'tokenizer', 'optimizer', 'lr_scheduler', 'train_dataloader', 'eval_dataloader']
         model = kwargs["model"]
         tokenizer = kwargs["tokenizer"]
