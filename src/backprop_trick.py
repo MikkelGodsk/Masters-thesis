@@ -4,9 +4,6 @@ import torch.nn.functional as F
 from functools import partial
 from typing import Any, Dict, Generator, Iterable, List, Tuple, Type, TypeAlias, Union
 
-# NOTE: Does not work yet...
-# TODO: Need to implement an LR scheduler that is setup with the model's optimizers...
-
 """
   Resources used in the implementation (for future reference):
   - SFTTrainer:                       https://github.com/huggingface/trl/blob/0f13e51efab6bea6b51200ea66396a0716d63182/trl/trainer/sft_trainer.py#L55
@@ -27,26 +24,6 @@ from typing import Any, Dict, Generator, Iterable, List, Tuple, Type, TypeAlias,
       - https://nvidia.github.io/apex/optimizers.html
     Note: `create_optimizer_and_scheduler` only creates optimizer and scheduler if they haven't been passed already... But for some reason, they are created later if FSDP is used... Maybe something to take into account later on....
 """
-
-
-"""
-How to use with Hugging Face Trainer:
-```
-model = AutoModelForCausalLM.from_pretrained(model_name, cache_dir=cache_dir, device_map="auto")
-model = patch_model(model, torch.optim.AdamW, optimizer_defaults={"lr": 1e-3})
-...
-trainer = SFTTrainer(
-    ...
-    optimizers=(DummyOptimizer(), None),  # This is necessary to avoid the HF trainer from creating its own optimizer
-)
-```
-"""
-
-def unzip(zipped_list):
-    """
-        Unzips a list of tuples into two lists
-    """
-    return list(zip(*zipped_list))
 
 
 def fusion_step_hook(param: torch.nn.Parameter, optimizer: torch.optim.Optimizer):
