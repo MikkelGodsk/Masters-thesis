@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>src package &mdash; Master&#39;s thesis  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="tests package" href="tests.html" />
+    <link rel="prev" title="Masters-thesis" href="modules.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Master's thesis
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Masters-thesis</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">src package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-src.backprop_trick">src.backprop_trick module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#src.backprop_trick.MotherOptimizer"><code class="docutils literal notranslate"><span class="pre">MotherOptimizer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.backprop_trick.VirtualParameterGroup"><code class="docutils literal notranslate"><span class="pre">VirtualParameterGroup</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.backprop_trick.cast_parameter_iterables_to_lists"><code class="docutils literal notranslate"><span class="pre">cast_parameter_iterables_to_lists()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.backprop_trick.fusion_step_hook"><code class="docutils literal notranslate"><span class="pre">fusion_step_hook()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.backprop_trick.get_parameter_list"><code class="docutils literal notranslate"><span class="pre">get_parameter_list()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.backprop_trick.unzip"><code class="docutils literal notranslate"><span class="pre">unzip()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-src.finetune">src.finetune module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#src.finetune.get_experiment_name"><code class="docutils literal notranslate"><span class="pre">get_experiment_name()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.finetune.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-src.lima_utils">src.lima_utils module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#src.lima_utils.ExampleCallback"><code class="docutils literal notranslate"><span class="pre">ExampleCallback</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.lima_utils.TemplateFormatter"><code class="docutils literal notranslate"><span class="pre">TemplateFormatter</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.lima_utils.filter_example"><code class="docutils literal notranslate"><span class="pre">filter_example()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.lima_utils.process_example"><code class="docutils literal notranslate"><span class="pre">process_example()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-src.profiler_callbacks">src.profiler_callbacks module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#src.profiler_callbacks.MemoryHistoryCallback"><code class="docutils literal notranslate"><span class="pre">MemoryHistoryCallback</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.profiler_callbacks.ProfilerCallbackBase"><code class="docutils literal notranslate"><span class="pre">ProfilerCallbackBase</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.profiler_callbacks.TorchProfilerCallback"><code class="docutils literal notranslate"><span class="pre">TorchProfilerCallback</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.profiler_callbacks.WandBProfilerCallback"><code class="docutils literal notranslate"><span class="pre">WandBProfilerCallback</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.profiler_callbacks.WandBTimerCallback"><code class="docutils literal notranslate"><span class="pre">WandBTimerCallback</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.profiler_callbacks.extract_memory_timeline_svg"><code class="docutils literal notranslate"><span class="pre">extract_memory_timeline_svg()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.profiler_callbacks.get_timestamp"><code class="docutils literal notranslate"><span class="pre">get_timestamp()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.profiler_callbacks.torch_get_devices"><code class="docutils literal notranslate"><span class="pre">torch_get_devices()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-src">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tests.html">tests package</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Master's thesis</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Masters-thesis</a></li>
+      <li class="breadcrumb-item active">src package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/src.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="src-package">
+<h1>src package<a class="headerlink" href="#src-package" title="Link to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
+</section>
+<section id="module-src.backprop_trick">
+<span id="src-backprop-trick-module"></span><h2>src.backprop_trick module<a class="headerlink" href="#module-src.backprop_trick" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.backprop_trick.MotherOptimizer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.backprop_trick.</span></span><span class="sig-name descname"><span class="pre">MotherOptimizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Tensor</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_cls</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">Optimizer</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">optimizer_defaults</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backprop_trick.MotherOptimizer" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizer</span></code></p>
+<p>This optimizer holds all the “child” optimizers, which are stepped automatically. It then functions as an interface with the LR scheduler and the HF trainer.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.backprop_trick.MotherOptimizer.get_optimizers_and_virtual_param_groups">
+<span class="sig-name descname"><span class="pre">get_optimizers_and_virtual_param_groups</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Tensor</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_cls</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">Optimizer</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">optimizer_defaults</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Optimizer</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#src.backprop_trick.VirtualParameterGroup" title="src.backprop_trick.VirtualParameterGroup"><span class="pre">VirtualParameterGroup</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#src.backprop_trick.MotherOptimizer.get_optimizers_and_virtual_param_groups" title="Link to this definition"></a></dt>
+<dd><p>This function creates the child optimizers and the virtual parameter groups.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.backprop_trick.MotherOptimizer.step">
+<span class="sig-name descname"><span class="pre">step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backprop_trick.MotherOptimizer.step" title="Link to this definition"></a></dt>
+<dd><p>Performs a single optimization step (parameter update).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>closure</strong> (<em>Callable</em>) – A closure that reevaluates the model and
+returns the loss. Optional for most optimizers.</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Unless otherwise specified, this function should not modify the
+<code class="docutils literal notranslate"><span class="pre">.grad</span></code> field of the parameters.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.backprop_trick.MotherOptimizer.zero_grad">
+<span class="sig-name descname"><span class="pre">zero_grad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backprop_trick.MotherOptimizer.zero_grad" title="Link to this definition"></a></dt>
+<dd><p>Resets the gradients of all optimized <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code> s.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>set_to_none</strong> (<em>bool</em>) – instead of setting to zero, set the grads to None.
+This will in general have lower memory footprint, and can modestly improve performance.
+However, it changes certain behaviors. For example:
+1. When the user tries to access a gradient and perform manual ops on it,
+a None attribute or a Tensor full of 0s will behave differently.
+2. If the user requests <code class="docutils literal notranslate"><span class="pre">zero_grad(set_to_none=True)</span></code> followed by a backward pass, <code class="docutils literal notranslate"><span class="pre">.grad</span></code>s
+are guaranteed to be None for params that did not receive a gradient.
+3. <code class="docutils literal notranslate"><span class="pre">torch.optim</span></code> optimizers have a different behavior if the gradient is 0 or None
+(in one case it does the step with a gradient of 0 and in the other it skips
+the step altogether).</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.backprop_trick.VirtualParameterGroup">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.backprop_trick.</span></span><span class="sig-name descname"><span class="pre">VirtualParameterGroup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">associated_child_optimizers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Optimizer</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backprop_trick.VirtualParameterGroup" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></p>
+<p>This class will be used for communication of hyperparameters between the mother optimizer and the child optimizers.
+It will look like an ordinary parameter group dictionary to any outside viewers,
+but upon updating its members, it will notify all child-optimizers of the change.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.backprop_trick.VirtualParameterGroup.items">
+<span class="sig-name descname"><span class="pre">items</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">a</span> <span class="pre">set-like</span> <span class="pre">object</span> <span class="pre">providing</span> <span class="pre">a</span> <span class="pre">view</span> <span class="pre">on</span> <span class="pre">D's</span> <span class="pre">items</span></span></span><a class="headerlink" href="#src.backprop_trick.VirtualParameterGroup.items" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.backprop_trick.VirtualParameterGroup.join_parameters">
+<span class="sig-name descname"><span class="pre">join_parameters</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.backprop_trick.VirtualParameterGroup.join_parameters" title="Link to this definition"></a></dt>
+<dd><p>This function returns a list of all the parameters in the child parameter groups.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.backprop_trick.VirtualParameterGroup.keys">
+<span class="sig-name descname"><span class="pre">keys</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">a</span> <span class="pre">set-like</span> <span class="pre">object</span> <span class="pre">providing</span> <span class="pre">a</span> <span class="pre">view</span> <span class="pre">on</span> <span class="pre">D's</span> <span class="pre">keys</span></span></span><a class="headerlink" href="#src.backprop_trick.VirtualParameterGroup.keys" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.backprop_trick.VirtualParameterGroup.values">
+<span class="sig-name descname"><span class="pre">values</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">an</span> <span class="pre">object</span> <span class="pre">providing</span> <span class="pre">a</span> <span class="pre">view</span> <span class="pre">on</span> <span class="pre">D's</span> <span class="pre">values</span></span></span><a class="headerlink" href="#src.backprop_trick.VirtualParameterGroup.values" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.backprop_trick.cast_parameter_iterables_to_lists">
+<span class="sig-prename descclassname"><span class="pre">src.backprop_trick.</span></span><span class="sig-name descname"><span class="pre">cast_parameter_iterables_to_lists</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Tensor</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#src.backprop_trick.cast_parameter_iterables_to_lists" title="Link to this definition"></a></dt>
+<dd><p>We since we will need to traverse the list of parameters twice</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.backprop_trick.fusion_step_hook">
+<span class="sig-prename descclassname"><span class="pre">src.backprop_trick.</span></span><span class="sig-name descname"><span class="pre">fusion_step_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Parameter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optimizer</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backprop_trick.fusion_step_hook" title="Link to this definition"></a></dt>
+<dd><p>An auxiliary function to be used as a hook for the model’s parameters. It is only meant to be used in conjunction with the patch_model function.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.backprop_trick.get_parameter_list">
+<span class="sig-prename descclassname"><span class="pre">src.backprop_trick.</span></span><span class="sig-name descname"><span class="pre">get_parameter_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_groups</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#src.backprop_trick.VirtualParameterGroup" title="src.backprop_trick.VirtualParameterGroup"><span class="pre">VirtualParameterGroup</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backprop_trick.get_parameter_list" title="Link to this definition"></a></dt>
+<dd><p>This function returns a list of parameters from the params argument.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.backprop_trick.unzip">
+<span class="sig-prename descclassname"><span class="pre">src.backprop_trick.</span></span><span class="sig-name descname"><span class="pre">unzip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zipped_list</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backprop_trick.unzip" title="Link to this definition"></a></dt>
+<dd><p>Unzips a list of tuples into two lists</p>
+</dd></dl>
+
+</section>
+<section id="module-src.finetune">
+<span id="src-finetune-module"></span><h2>src.finetune module<a class="headerlink" href="#module-src.finetune" title="Link to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="src.finetune.get_experiment_name">
+<span class="sig-prename descclassname"><span class="pre">src.finetune.</span></span><span class="sig-name descname"><span class="pre">get_experiment_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_lora</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_quantization</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fp32</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tf32</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backprop_trick</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.finetune.get_experiment_name" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.finetune.main">
+<span class="sig-prename descclassname"><span class="pre">src.finetune.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'facebook/opt-125m'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'GAIR/lima'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_seq_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1024</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_epochs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_lora</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_quantization</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gradient_checkpointing</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fp16</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tf32</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profiler_repeat_every_n_steps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resume_from_checkpoint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_test_batches</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backprop_trick</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.finetune.main" title="Link to this definition"></a></dt>
+<dd><p>Finetunes the given model on the given dataset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_name</strong> – The name of the model to train. Can be “facebook/opt-125m”, “meta-llama/Llama-2-7b-hf”, “meta-llama/Llama-2-7b-chat-hf” etc…</p></li>
+<li><p><strong>dataset_name</strong> – The name of the dataset to finetune on. Can only be “GAIR/lima” for now.</p></li>
+<li><p><strong>max_seq_length</strong> – The maximum number of tokens to generate in the finetuning process. NOTE: My PC can handle max_seq_length=256 with OPT-125m, but go for 128 for testing…</p></li>
+<li><p><strong>num_epochs</strong> – The number of epochs to train for.</p></li>
+<li><p><strong>use_lora</strong> – Whether to use LoRA for training.</p></li>
+<li><p><strong>use_quantization</strong> – Whether to use quantization for training.</p></li>
+<li><p><strong>fp16</strong> – Whether to use fp16 floating data type.</p></li>
+<li><p><strong>tf32</strong> – Whether to use tf32 floating data type.</p></li>
+<li><p><strong>profile</strong> – Whether to do a detailed profiling of the GPU memory and the stack during training. Note that a rudimentary GPU memory profiler is always sampling the first 5 steps of an epoch.</p></li>
+<li><p><strong>profiler_repeat_every_n_steps</strong> – Number of steps to repeat the profiling.</p></li>
+<li><p><strong>resume_from_checkpoint</strong> – If not None, the path to a checkpoint to resume training from (the entire experiment will simply proceed from there…).</p></li>
+<li><p><strong>output_dir</strong> – The directory where the output will be stored.</p></li>
+<li><p><strong>test</strong> – Whether we are running test code. If so, you may also want to set n_test_batches to a small number.</p></li>
+<li><p><strong>n_test_batches</strong> – Number of batches used for testing if test is True. Set e.g. to 1 for overfitting to a single batch (to check if the model is set up correctly).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-src.lima_utils">
+<span id="src-lima-utils-module"></span><h2>src.lima_utils module<a class="headerlink" href="#module-src.lima_utils" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.lima_utils.ExampleCallback">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.lima_utils.</span></span><span class="sig-name descname"><span class="pre">ExampleCallback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">template_formatter</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_seq_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1024</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_n_examples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.lima_utils.ExampleCallback" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TrainerCallback</span></code></p>
+<p>A callback for the <cite>Trainer</cite> the model responses to randomly selected training examples and eval examples.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.lima_utils.ExampleCallback.template_formatter">
+<span class="sig-name descname"><span class="pre">template_formatter</span></span><a class="headerlink" href="#src.lima_utils.ExampleCallback.template_formatter" title="Link to this definition"></a></dt>
+<dd><p>The template formatter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#src.lima_utils.TemplateFormatter" title="src.lima_utils.TemplateFormatter">TemplateFormatter</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.lima_utils.ExampleCallback.max_seq_length">
+<span class="sig-name descname"><span class="pre">max_seq_length</span></span><a class="headerlink" href="#src.lima_utils.ExampleCallback.max_seq_length" title="Link to this definition"></a></dt>
+<dd><p>The maximum sequence length.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.lima_utils.ExampleCallback.log_n_examples">
+<span class="sig-name descname"><span class="pre">log_n_examples</span></span><a class="headerlink" href="#src.lima_utils.ExampleCallback.log_n_examples" title="Link to this definition"></a></dt>
+<dd><p>The number of examples to log.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.lima_utils.ExampleCallback.on_log">
+<span class="sig-name descname"><span class="pre">on_log</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.lima_utils.ExampleCallback.on_log" title="Link to this definition"></a></dt>
+<dd><p>Logs the model responses to randomly selected training examples and eval examples.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-name descname"><span class="pre">on_log</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#id0" title="Link to this definition"></a></dt>
+<dd><p>Logs the model responses to randomly selected training examples and eval examples.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>args</strong> – The arguments.</p></li>
+<li><p><strong>state</strong> – The state.</p></li>
+<li><p><strong>control</strong> – The control.</p></li>
+<li><p><strong>logs</strong> – The logs.</p></li>
+<li><p><strong>**kwargs</strong> – The keyword arguments.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.lima_utils.TemplateFormatter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.lima_utils.</span></span><span class="sig-name descname"><span class="pre">TemplateFormatter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.lima_utils.TemplateFormatter" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Ensures that the data has the correct format for the TRL library.</p>
+<p>To ensure compatibility with the TRL library, we need to pass the trainer the class’s <cite>.train_ds</cite> and <cite>.test_ds</cite>.</p>
+<p class="rubric">Example</p>
+<p>To ensure correct formatting of the dataset, use the TemplateFormatter like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">cache_dir</span><span class="o">=</span><span class="n">cache_dir</span><span class="p">)</span>   <span class="c1"># Potentially with additional special tokens</span>
+<span class="n">ds</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;lima&quot;</span><span class="p">,</span> <span class="s2">&quot;plain_text&quot;</span><span class="p">)</span>
+<span class="n">template_formatter</span> <span class="o">=</span> <span class="n">TemplateFormatter</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">)</span>
+<span class="n">train_ds</span><span class="p">,</span> <span class="n">test_ds</span> <span class="o">=</span> <span class="n">template_formatter</span><span class="o">.</span><span class="n">train_ds</span><span class="p">,</span> <span class="n">template_formatter</span><span class="o">.</span><span class="n">test_ds</span>    <span class="c1"># These are the datasets to pass the SFTTrainer</span>
+<span class="o">...</span>
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">SFTTrainer</span><span class="p">(</span>
+    <span class="o">...</span>
+    <span class="n">train_dataset</span><span class="o">=</span><span class="n">train_ds</span><span class="p">,</span>
+    <span class="o">...</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.lima_utils.TemplateFormatter.ds">
+<span class="sig-name descname"><span class="pre">ds</span></span><a class="headerlink" href="#src.lima_utils.TemplateFormatter.ds" title="Link to this definition"></a></dt>
+<dd><p>The dataset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>datasets.DatasetDict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.lima_utils.TemplateFormatter.tokenizer">
+<span class="sig-name descname"><span class="pre">tokenizer</span></span><a class="headerlink" href="#src.lima_utils.TemplateFormatter.tokenizer" title="Link to this definition"></a></dt>
+<dd><p>The tokenizer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>transformers.PreTrainedTokenizer</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.lima_utils.TemplateFormatter.instruction_template">
+<span class="sig-name descname"><span class="pre">instruction_template</span></span><a class="headerlink" href="#src.lima_utils.TemplateFormatter.instruction_template" title="Link to this definition"></a></dt>
+<dd><p>The instruction template.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.lima_utils.TemplateFormatter.response_template">
+<span class="sig-name descname"><span class="pre">response_template</span></span><a class="headerlink" href="#src.lima_utils.TemplateFormatter.response_template" title="Link to this definition"></a></dt>
+<dd><p>The response template.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.lima_utils.TemplateFormatter.map_kwargs">
+<span class="sig-name descname"><span class="pre">map_kwargs</span></span><a class="headerlink" href="#src.lima_utils.TemplateFormatter.map_kwargs" title="Link to this definition"></a></dt>
+<dd><p>The kwargs for the <cite>map</cite> method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.lima_utils.TemplateFormatter.data_processor">
+<span class="sig-name descname"><span class="pre">data_processor</span></span><a class="headerlink" href="#src.lima_utils.TemplateFormatter.data_processor" title="Link to this definition"></a></dt>
+<dd><p>The function to process the data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.lima_utils.TemplateFormatter.train_ds">
+<span class="sig-name descname"><span class="pre">train_ds</span></span><a class="headerlink" href="#src.lima_utils.TemplateFormatter.train_ds" title="Link to this definition"></a></dt>
+<dd><p>The training dataset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>datasets.Dataset</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.lima_utils.TemplateFormatter.test_ds">
+<span class="sig-name descname"><span class="pre">test_ds</span></span><a class="headerlink" href="#src.lima_utils.TemplateFormatter.test_ds" title="Link to this definition"></a></dt>
+<dd><p>The test dataset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>datasets.Dataset</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.lima_utils.TemplateFormatter.collator">
+<span class="sig-name descname"><span class="pre">collator</span></span><a class="headerlink" href="#src.lima_utils.TemplateFormatter.collator" title="Link to this definition"></a></dt>
+<dd><p>The data collator.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>trl.trainer.DataCollatorForCompletionOnlyLM</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.lima_utils.TemplateFormatter.process_lima">
+<span class="sig-name descname"><span class="pre">process_lima</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.lima_utils.TemplateFormatter.process_lima" title="Link to this definition"></a></dt>
+<dd><p>Process the dataset.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.lima_utils.TemplateFormatter.get_instruction_and_response">
+<span class="sig-name descname"><span class="pre">get_instruction_and_response</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.lima_utils.TemplateFormatter.get_instruction_and_response" title="Link to this definition"></a></dt>
+<dd><p>Get the instruction and response from a given example.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.lima_utils.TemplateFormatter.remove_prompt_from_completion">
+<span class="sig-name descname"><span class="pre">remove_prompt_from_completion</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.lima_utils.TemplateFormatter.remove_prompt_from_completion" title="Link to this definition"></a></dt>
+<dd><p>Remove the prompt from the completion.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.lima_utils.TemplateFormatter.correct_tokenized_prompt">
+<span class="sig-name descname"><span class="pre">correct_tokenized_prompt</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.lima_utils.TemplateFormatter.correct_tokenized_prompt" title="Link to this definition"></a></dt>
+<dd><p>Put a prompt in the correct format even after splitting…</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="id1">
+<span class="sig-name descname"><span class="pre">get_instruction_and_response</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#id1" title="Link to this definition"></a></dt>
+<dd><p>Splits the input into an instruction and a response using the data collator - i.e. in the same way as the SFTTrainer does it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<em>str</em><em> or </em><em>dict</em>) – The input.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The instruction and the response (both as strings).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="id2">
+<span class="sig-name descname"><span class="pre">process_lima</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#id2" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="id3">
+<span class="sig-name descname"><span class="pre">remove_prompt_from_completion</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tokenized_prompt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenized_completion</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#id3" title="Link to this definition"></a></dt>
+<dd><p>Takes a completion (which includes the prompt), and then removes the prompt from it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tokenized_prompt</strong> (<em>torch.Tensor</em>) – The tokenized prompt.</p></li>
+<li><p><strong>tokenized_completion</strong> (<em>torch.Tensor</em>) – The tokenized completion.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The tokenized completion without the prompt.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.lima_utils.filter_example">
+<span class="sig-prename descclassname"><span class="pre">src.lima_utils.</span></span><span class="sig-name descname"><span class="pre">filter_example</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.lima_utils.filter_example" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.lima_utils.process_example">
+<span class="sig-prename descclassname"><span class="pre">src.lima_utils.</span></span><span class="sig-name descname"><span class="pre">process_example</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.lima_utils.process_example" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-src.profiler_callbacks">
+<span id="src-profiler-callbacks-module"></span><h2>src.profiler_callbacks module<a class="headerlink" href="#module-src.profiler_callbacks" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.profiler_callbacks.MemoryHistoryCallback">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.profiler_callbacks.</span></span><span class="sig-name descname"><span class="pre">MemoryHistoryCallback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logging_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile_epochs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile_n_steps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.MemoryHistoryCallback" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#src.profiler_callbacks.ProfilerCallbackBase" title="src.profiler_callbacks.ProfilerCallbackBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProfilerCallbackBase</span></code></a></p>
+<p>To view the memory trace, go to <a class="reference external" href="https://pytorch.org/memory_viz">https://pytorch.org/memory_viz</a> and drag in the pickle file.
+NOTE: The stack trace grows upwards here!</p>
+<p>You might get this issue:
+<a href="#id4"><span class="problematic" id="id5">``</span></a>`
+huggingface/tokenizers: The current process just got forked, after parallelism has already been used. Disabling parallelism to avoid deadlocks…
+To disable this warning, you can either:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Avoid using <cite>tokenizers</cite> before the fork if possible</p></li>
+<li><p>Explicitly set the environment variable TOKENIZERS_PARALLELISM=(true | false)</p></li>
+</ul>
+</div></blockquote>
+<p><a href="#id6"><span class="problematic" id="id7">``</span></a>`
+I’m not sure what to do about it, so maybe this callback should only be used if you tend to run out of memory…</p>
+<p>Docs: <a class="reference external" href="https://pytorch.org/docs/stable/torch_cuda_memory.html">https://pytorch.org/docs/stable/torch_cuda_memory.html</a>
+and <a class="reference external" href="https://pytorch.org/blog/understanding-gpu-memory-1/">https://pytorch.org/blog/understanding-gpu-memory-1/</a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.profiler_callbacks.MemoryHistoryCallback.start">
+<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.MemoryHistoryCallback.start" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.profiler_callbacks.MemoryHistoryCallback.stop">
+<span class="sig-name descname"><span class="pre">stop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_identifier</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.MemoryHistoryCallback.stop" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.profiler_callbacks.ProfilerCallbackBase">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.profiler_callbacks.</span></span><span class="sig-name descname"><span class="pre">ProfilerCallbackBase</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logging_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile_epochs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile_n_steps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repeat_every_n_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.ProfilerCallbackBase" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TrainerCallback</span></code></p>
+<p>Base class for the profilers. Since they have to be scheduled identically, it makes sense to have a base class for them.
+The subclasses are meant to be used like this:
+<a href="#id8"><span class="problematic" id="id9">``</span></a>`
+trainer = SFTTrainer(</p>
+<blockquote>
+<div><p>…
+callbacks=[</p>
+<blockquote>
+<div><p>TorchProfilerCallback(logging_dir, profile_epochs=[1], profile_n_steps=5),
+MemoryHistoryCallback(logging_dir, profile_epochs=[1], profile_n_steps=5),
+…</p>
+</div></blockquote>
+<p>],</p>
+</div></blockquote>
+<section id="id10">
+<h3>)<a class="headerlink" href="#id10" title="Link to this heading"></a></h3>
+<p>I.e., they are scheduled to log the first <cite>profile_n_steps</cite> of each epoch in <cite>profile_epochs</cite>. This to ensure that the files to not become too large.</p>
+<p>NOTE: Be very careful that they do not log during the logging, if you are logging using model inference! This will make the files very large and slow to open!</p>
+<p>Docs: For HuggingFace callbacks, see <a class="reference external" href="https://huggingface.co/docs/transformers/main_classes/callback#transformers.TrainerCallback">https://huggingface.co/docs/transformers/main_classes/callback#transformers.TrainerCallback</a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.profiler_callbacks.ProfilerCallbackBase.on_epoch_begin">
+<span class="sig-name descname"><span class="pre">on_epoch_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainingArguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainerState</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainerControl</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.ProfilerCallbackBase.on_epoch_begin" title="Link to this definition"></a></dt>
+<dd><p>Event called at the beginning of an epoch.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.profiler_callbacks.ProfilerCallbackBase.on_epoch_end">
+<span class="sig-name descname"><span class="pre">on_epoch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainingArguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainerState</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainerControl</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.ProfilerCallbackBase.on_epoch_end" title="Link to this definition"></a></dt>
+<dd><p>Event called at the end of an epoch.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.profiler_callbacks.ProfilerCallbackBase.on_step_begin">
+<span class="sig-name descname"><span class="pre">on_step_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainingArguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainerState</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainerControl</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.ProfilerCallbackBase.on_step_begin" title="Link to this definition"></a></dt>
+<dd><p>Event called at the beginning of a training step. If using gradient accumulation, one training step might take
+several inputs.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.profiler_callbacks.ProfilerCallbackBase.on_step_end">
+<span class="sig-name descname"><span class="pre">on_step_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainingArguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainerState</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainerControl</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.ProfilerCallbackBase.on_step_end" title="Link to this definition"></a></dt>
+<dd><p>Event called at the end of a training step. If using gradient accumulation, one training step might take
+several inputs.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.profiler_callbacks.ProfilerCallbackBase.on_train_end">
+<span class="sig-name descname"><span class="pre">on_train_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainingArguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainerState</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainerControl</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.ProfilerCallbackBase.on_train_end" title="Link to this definition"></a></dt>
+<dd><p>Event called at the end of training.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.profiler_callbacks.ProfilerCallbackBase.start">
+<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.ProfilerCallbackBase.start" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.profiler_callbacks.ProfilerCallbackBase.start_">
+<span class="sig-name descname"><span class="pre">start_</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.ProfilerCallbackBase.start_" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.profiler_callbacks.ProfilerCallbackBase.step">
+<span class="sig-name descname"><span class="pre">step</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.ProfilerCallbackBase.step" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.profiler_callbacks.ProfilerCallbackBase.step_">
+<span class="sig-name descname"><span class="pre">step_</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.ProfilerCallbackBase.step_" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.profiler_callbacks.ProfilerCallbackBase.stop">
+<span class="sig-name descname"><span class="pre">stop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_identifier</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.ProfilerCallbackBase.stop" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.profiler_callbacks.ProfilerCallbackBase.stop_">
+<span class="sig-name descname"><span class="pre">stop_</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.ProfilerCallbackBase.stop_" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.profiler_callbacks.TorchProfilerCallback">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.profiler_callbacks.</span></span><span class="sig-name descname"><span class="pre">TorchProfilerCallback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logging_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile_epochs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile_n_steps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">do_memory_profile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">do_stack_profile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upload_to_wandb</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_files</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.TorchProfilerCallback" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#src.profiler_callbacks.ProfilerCallbackBase" title="src.profiler_callbacks.ProfilerCallbackBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProfilerCallbackBase</span></code></a></p>
+<p>This callback logs the PyTorch profiler data for a given epoch. It logs the first n steps of an epoch.
+NOTE: Be careful that this one does not log during the logging, if you are logging using model inference!</p>
+<p>To open the profiler stack trace data in Chrome, go to chrome://tracing and drag in the JSON file.
+To open the memory timeline, open the HTML file in a browser or view it in W&amp;B.</p>
+<p>How to use with Hugging Face Trainer:
+<a href="#id11"><span class="problematic" id="id12">``</span></a>`
+trainer = SFTTrainer(</p>
+<blockquote>
+<div><p>…
+callbacks=[</p>
+<blockquote>
+<div><p>ProfilerCallback(logging_dir, profile_epochs=[1], profile_n_steps=1, upload_to_wandb=True),</p>
+</div></blockquote>
+<p>],</p>
+</div></blockquote>
+<section id="id13">
+<h3>)<a class="headerlink" href="#id13" title="Link to this heading"></a></h3>
+<p>Docs: <a class="reference external" href="https://pytorch.org/tutorials/recipes/recipes/profiler.html">https://pytorch.org/tutorials/recipes/recipes/profiler.html</a>
+and <a class="reference external" href="https://pytorch.org/docs/stable/profiler.html">https://pytorch.org/docs/stable/profiler.html</a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.profiler_callbacks.TorchProfilerCallback.setup_profiler">
+<span class="sig-name descname"><span class="pre">setup_profiler</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.TorchProfilerCallback.setup_profiler" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.profiler_callbacks.TorchProfilerCallback.start">
+<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.TorchProfilerCallback.start" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.profiler_callbacks.TorchProfilerCallback.step">
+<span class="sig-name descname"><span class="pre">step</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.TorchProfilerCallback.step" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.profiler_callbacks.TorchProfilerCallback.stop">
+<span class="sig-name descname"><span class="pre">stop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_identifier</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.TorchProfilerCallback.stop" title="Link to this definition"></a></dt>
+<dd><p>Stop the profiler and save the data to disk. Is safe to call whenever. Does nothing if the profiler is not running.</p>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.profiler_callbacks.WandBProfilerCallback">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.profiler_callbacks.</span></span><span class="sig-name descname"><span class="pre">WandBProfilerCallback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile_epochs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile_n_steps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.WandBProfilerCallback" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#src.profiler_callbacks.TorchProfilerCallback" title="src.profiler_callbacks.TorchProfilerCallback"><code class="xref py py-class docutils literal notranslate"><span class="pre">TorchProfilerCallback</span></code></a></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.profiler_callbacks.WandBTimerCallback">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.profiler_callbacks.</span></span><span class="sig-name descname"><span class="pre">WandBTimerCallback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.WandBTimerCallback" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TrainerCallback</span></code></p>
+<p>Written mostly by GitHub Copilot</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.profiler_callbacks.WandBTimerCallback.on_epoch_begin">
+<span class="sig-name descname"><span class="pre">on_epoch_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainingArguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainerState</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainerControl</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.WandBTimerCallback.on_epoch_begin" title="Link to this definition"></a></dt>
+<dd><p>Event called at the beginning of an epoch.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.profiler_callbacks.WandBTimerCallback.on_epoch_end">
+<span class="sig-name descname"><span class="pre">on_epoch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainingArguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainerState</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainerControl</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.WandBTimerCallback.on_epoch_end" title="Link to this definition"></a></dt>
+<dd><p>Event called at the end of an epoch.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.profiler_callbacks.WandBTimerCallback.on_step_begin">
+<span class="sig-name descname"><span class="pre">on_step_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainingArguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainerState</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainerControl</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.WandBTimerCallback.on_step_begin" title="Link to this definition"></a></dt>
+<dd><p>Event called at the beginning of a training step. If using gradient accumulation, one training step might take
+several inputs.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.profiler_callbacks.WandBTimerCallback.on_step_end">
+<span class="sig-name descname"><span class="pre">on_step_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainingArguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainerState</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainerControl</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.WandBTimerCallback.on_step_end" title="Link to this definition"></a></dt>
+<dd><p>Event called at the end of a training step. If using gradient accumulation, one training step might take
+several inputs.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.profiler_callbacks.WandBTimerCallback.on_train_begin">
+<span class="sig-name descname"><span class="pre">on_train_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainingArguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainerState</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainerControl</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.WandBTimerCallback.on_train_begin" title="Link to this definition"></a></dt>
+<dd><p>Event called at the beginning of training.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.profiler_callbacks.WandBTimerCallback.on_train_end">
+<span class="sig-name descname"><span class="pre">on_train_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainingArguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainerState</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TrainerControl</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.WandBTimerCallback.on_train_end" title="Link to this definition"></a></dt>
+<dd><p>Event called at the end of training.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.profiler_callbacks.WandBTimerCallback.setup">
+<span class="sig-name descname"><span class="pre">setup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.WandBTimerCallback.setup" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.profiler_callbacks.extract_memory_timeline_svg">
+<span class="sig-prename descclassname"><span class="pre">src.profiler_callbacks.</span></span><span class="sig-name descname"><span class="pre">extract_memory_timeline_svg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profiler</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(20,</span> <span class="pre">12)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.extract_memory_timeline_svg" title="Link to this definition"></a></dt>
+<dd><p>This function is modified directly from the PyTorch source code here:
+- <a class="reference external" href="https://github.com/pytorch/pytorch/blob/76f3663efea524adcb60f515b471c412aa78b95e/torch/profiler/profiler.py#L258">https://github.com/pytorch/pytorch/blob/76f3663efea524adcb60f515b471c412aa78b95e/torch/profiler/profiler.py#L258</a>
+- <a class="reference external" href="https://github.com/pytorch/pytorch/blob/360761f7d039445e7b00493c2990ace9f94a5a9e/torch/profiler/_memory_profiler.py#L1133">https://github.com/pytorch/pytorch/blob/360761f7d039445e7b00493c2990ace9f94a5a9e/torch/profiler/_memory_profiler.py#L1133</a></p>
+<p>It is a bit of a hack, but it works. The original function is not meant to be used like this, but it is the only way to get the memory timeline as an SVG file. Copyright disclaimer from PyTorch:</p>
+<p>From PyTorch:</p>
+<p>Copyright (c) 2016-     Facebook, Inc            (Adam Paszke)
+Copyright (c) 2014-     Facebook, Inc            (Soumith Chintala)
+Copyright (c) 2011-2014 Idiap Research Institute (Ronan Collobert)
+Copyright (c) 2012-2014 Deepmind Technologies    (Koray Kavukcuoglu)
+Copyright (c) 2011-2012 NEC Laboratories America (Koray Kavukcuoglu)
+Copyright (c) 2011-2013 NYU                      (Clement Farabet)
+Copyright (c) 2006-2010 NEC Laboratories America (Ronan Collobert, Leon Bottou, Iain Melvin, Jason Weston)
+Copyright (c) 2006      Idiap Research Institute (Samy Bengio)
+Copyright (c) 2001-2004 Idiap Research Institute (Ronan Collobert, Samy Bengio, Johnny Mariethoz)</p>
+<p>From Caffe2:</p>
+<p>Copyright (c) 2016-present, Facebook Inc. All rights reserved.</p>
+<p>All contributions by Facebook:
+Copyright (c) 2016 Facebook Inc.</p>
+<p>All contributions by Google:
+Copyright (c) 2015 Google Inc.
+All rights reserved.</p>
+<p>All contributions by Yangqing Jia:
+Copyright (c) 2015 Yangqing Jia
+All rights reserved.</p>
+<p>All contributions by Kakao Brain:
+Copyright 2019-2020 Kakao Brain</p>
+<p>All contributions by Cruise LLC:
+Copyright (c) 2022 Cruise LLC.
+All rights reserved.</p>
+<p>All contributions from Caffe:
+Copyright(c) 2013, 2014, 2015, the respective contributors
+All rights reserved.</p>
+<p>All other contributions:
+Copyright(c) 2015, 2016 the respective contributors
+All rights reserved.</p>
+<p>Caffe2 uses a copyright model similar to Caffe: each contributor holds
+copyright over their contributions to Caffe2. The project versioning records
+all such contribution and copyright details. If a contributor wants to further
+mark their specific copyright on a particular contribution, they should
+indicate their copyright solely in the commit message of the change when it is
+committed.</p>
+<p>All rights reserved.</p>
+<p>Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:</p>
+<p>1. Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.</p>
+<p>2. Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.</p>
+<p>3. Neither the names of Facebook, Deepmind Technologies, NYU, NEC Laboratories America
+and IDIAP Research Institute nor the names of its contributors may be
+used to endorse or promote products derived from this software without
+specific prior written permission.</p>
+<p>THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS”
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.profiler_callbacks.get_timestamp">
+<span class="sig-prename descclassname"><span class="pre">src.profiler_callbacks.</span></span><span class="sig-name descname"><span class="pre">get_timestamp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.get_timestamp" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.profiler_callbacks.torch_get_devices">
+<span class="sig-prename descclassname"><span class="pre">src.profiler_callbacks.</span></span><span class="sig-name descname"><span class="pre">torch_get_devices</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.profiler_callbacks.torch_get_devices" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-src">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-src" title="Link to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modules.html" class="btn btn-neutral float-left" title="Masters-thesis" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="tests.html" class="btn btn-neutral float-right" title="tests package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Mikkel Godsk Jørgensen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

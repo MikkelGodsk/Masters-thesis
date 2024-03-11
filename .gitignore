@@ -21,7 +21,7 @@ env_test/gpu_20406828.err
 env_test/gpu_20406828.out
 env_test/.gitignore
 dist
-build
+/build
 __pycache__
 *.egg-info
 *.egg
