@@ -1,3 +1,19 @@
+"""
+Contains some useful callbacks for profiling in the Hugging Face Trainer. 
+-------------------------------------------------------------------------
+
+Module :mod:`profiler_callbacks` contains the callbacks for performing memory profiling, stack profiling, and timing of the training.
+The following of the callbacks log to W&B:
+    
+        - :class:`WandBProfilerCallback`
+        - :class:`WandBTimerCallback`
+
+The following of the callbacks log to disk:
+        
+            - :class:`TorchProfilerCallback`
+            - :class:`MemoryHistoryCallback`
+"""
+
 import os
 import torch
 import pickle
@@ -24,17 +40,17 @@ def torch_get_devices():
 class ProfilerCallbackBase(TrainerCallback):
     """
         Base class for the profilers. Since they have to be scheduled identically, it makes sense to have a base class for them.
-        The subclasses are meant to be used like this:
-        ```
-        trainer = SFTTrainer(
-            ...
-            callbacks=[
-                TorchProfilerCallback(logging_dir, profile_epochs=[1], profile_n_steps=5), 
-                MemoryHistoryCallback(logging_dir, profile_epochs=[1], profile_n_steps=5),
+        The subclasses are meant to be used like this::
+
+            trainer = SFTTrainer(
                 ...
-            ],
-        )
-        ```
+                callbacks=[
+                    TorchProfilerCallback(logging_dir, profile_epochs=[1], profile_n_steps=5), 
+                    MemoryHistoryCallback(logging_dir, profile_epochs=[1], profile_n_steps=5),
+                    ...
+                ],
+            )
+        
         I.e., they are scheduled to log the first `profile_n_steps` of each epoch in `profile_epochs`. This to ensure that the files to not become too large.
 
         NOTE: Be very careful that they do not log during the logging, if you are logging using model inference! This will make the files very large and slow to open!
@@ -113,15 +129,14 @@ class TorchProfilerCallback(ProfilerCallbackBase):
     To open the profiler stack trace data in Chrome, go to chrome://tracing and drag in the JSON file.
     To open the memory timeline, open the HTML file in a browser or view it in W&B.
 
-    How to use with Hugging Face Trainer:
-    ```
-    trainer = SFTTrainer(
-        ...
-        callbacks=[
-            ProfilerCallback(logging_dir, profile_epochs=[1], profile_n_steps=1, upload_to_wandb=True), 
-        ],
-    )
-    ```
+    How to use with Hugging Face Trainer::
+
+        trainer = SFTTrainer(
+            ...
+            callbacks=[
+                ProfilerCallback(logging_dir, profile_epochs=[1], profile_n_steps=1, upload_to_wandb=True), 
+            ],
+        )
 
     Docs: https://pytorch.org/tutorials/recipes/recipes/profiler.html
     and https://pytorch.org/docs/stable/profiler.html
@@ -249,13 +264,13 @@ class MemoryHistoryCallback(ProfilerCallbackBase):
     To view the memory trace, go to https://pytorch.org/memory_viz and drag in the pickle file.
     NOTE: The stack trace grows upwards here!
     
-    You might get this issue: 
-    ```
-    huggingface/tokenizers: The current process just got forked, after parallelism has already been used. Disabling parallelism to avoid deadlocks...
-    To disable this warning, you can either:
-        - Avoid using `tokenizers` before the fork if possible
-        - Explicitly set the environment variable TOKENIZERS_PARALLELISM=(true | false)
-    ```
+    You might get this issue::
+    
+        huggingface/tokenizers: The current process just got forked, after parallelism has already been used. Disabling parallelism to avoid deadlocks...
+        To disable this warning, you can either:
+            - Avoid using `tokenizers` before the fork if possible
+            - Explicitly set the environment variable TOKENIZERS_PARALLELISM=(true | false)
+
     I'm not sure what to do about it, so maybe this callback should only be used if you tend to run out of memory...
 
     Docs: https://pytorch.org/docs/stable/torch_cuda_memory.html

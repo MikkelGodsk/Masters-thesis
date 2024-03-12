@@ -1,29 +1,37 @@
+"""
+Implementation of the backpropagation trick for the HuggingFace Trainer class.
+-------------------------------------------------------------------------------------------
+
+The module :mod:`backprop_trick` contains the classes used in performing the "backprop trick" in HuggingFace's Trainer.
+The "backprop trick" is a method, where we update the model parameters and de-allocate the gradients, as we go through the backpropagation.
+This is done to save memory. The method is used in the `MotherOptimizer` class, which orchestrates the hyperparameter updates of the child optimizers (such as for usage with a learning rate scheduler).
+The `MotherOptimizer` class is a `torch.optim.Optimizer`, but it does nothing on `step` nor on `zero_grad`.
+
+
+Resources used in the implementation (for future reference):
+- SFTTrainer:                       https://github.com/huggingface/trl/blob/0f13e51efab6bea6b51200ea66396a0716d63182/trl/trainer/sft_trainer.py#L55
+- Trainer._inner_training_loop:     https://github.com/huggingface/transformers/blob/092f1fdaa4224fdd88c616dc9678e6fcb37bfffd/src/transformers/trainer.py#L1631
+- torch.LambdaLR:                   https://pytorch.org/docs/stable/_modules/torch/optim/lr_scheduler.html#LambdaLR
+- torch.LRScheduler:                https://pytorch.org/ignite/_modules/ignite/handlers/param_scheduler.html#LRScheduler
+
+LR_Scheduler has its .step method called in `SFTTrainer.train` if it's not a ReduceLROnPlateau
+
+NOTE: Things to turn off due to incompatibility:
+  - Gradient accumulation (i.e. args.gradient_accumulation_steps = 1)... This method mitigates the need for it!
+  - Gradient clipping (args.max_grad_norm = 0 or None)... Gradient clipping must be implemented as a callback instead.
+
+NOTE: Distributed training (not yet taken into account)
+  There might be some things that could be made faster with Nvidia Apex? But I'll start simple...
+  The Apex rabbithole starts here: 
+    - https://github.com/huggingface/transformers/blob/092f1fdaa4224fdd88c616dc9678e6fcb37bfffd/src/transformers/trainer.py#L1770C9-L1781C18
+    - https://nvidia.github.io/apex/optimizers.html
+  Note: `create_optimizer_and_scheduler` only creates optimizer and scheduler if they haven't been passed already... But for some reason, they are created later if FSDP is used... Maybe something to take into account later on....
+"""
 import torch
 from torch import nn
 import torch.nn.functional as F
 from functools import partial
 from typing import Any, Dict, Generator, Iterable, List, Tuple, Type, TypeAlias, Union
-
-"""
-  Resources used in the implementation (for future reference):
-  - SFTTrainer:                       https://github.com/huggingface/trl/blob/0f13e51efab6bea6b51200ea66396a0716d63182/trl/trainer/sft_trainer.py#L55
-  - Trainer._inner_training_loop:     https://github.com/huggingface/transformers/blob/092f1fdaa4224fdd88c616dc9678e6fcb37bfffd/src/transformers/trainer.py#L1631
-  - torch.LambdaLR:                   https://pytorch.org/docs/stable/_modules/torch/optim/lr_scheduler.html#LambdaLR
-  - torch.LRScheduler:                https://pytorch.org/ignite/_modules/ignite/handlers/param_scheduler.html#LRScheduler
-
-  LR_Scheduler has its .step method called if it's not a ReduceLROnPlateau
-
-  NOTE: Things to turn off
-    - Gradient accumulation (i.e. args.gradient_accumulation_steps = 1)... This method mitigates the need for it!
-    - Gradient clipping (args.max_grad_norm = 0 or None)... Gradient clipping must be implemented as a callback instead.
-
-  NOTE: Distributed training
-    There might be some things that could be made faster with Nvidia Apex? But I'll start simple...
-    The Apex rabbithole starts here: 
-      - https://github.com/huggingface/transformers/blob/092f1fdaa4224fdd88c616dc9678e6fcb37bfffd/src/transformers/trainer.py#L1770C9-L1781C18
-      - https://nvidia.github.io/apex/optimizers.html
-    Note: `create_optimizer_and_scheduler` only creates optimizer and scheduler if they haven't been passed already... But for some reason, they are created later if FSDP is used... Maybe something to take into account later on....
-"""
 
 
 def fusion_step_hook(param: torch.nn.Parameter, optimizer: torch.optim.Optimizer):
@@ -136,9 +144,13 @@ class MotherOptimizer(torch.optim.Optimizer):
     super().__init__(self.param_groups, {})
 
   def step(self, *args, **kwargs):
+    """This method does nothing, and is only there to mock the interface of the torch.optim.Optimizer class. The actual stepping is done in the fusion_step_hook.
+    """
     pass
 
   def zero_grad(self, *args, **kwargs):
+    """This method does nothing, and is only there to mock the interface of the torch.optim.Optimizer class. 
+    """
     pass
   
   def get_optimizers_and_virtual_param_groups(self, 
