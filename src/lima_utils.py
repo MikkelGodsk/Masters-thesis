@@ -1,6 +1,6 @@
 """
-Contains the utilitites for the LIMA dataset.
----------------------------------------------
+Utilitites for the LIMA dataset.
+--------------------------------
 
 The module :mod:`lima_utils` ensures that the LIMA dataset is correctly formatted when used with the TRL Trainer.
 """

@@ -1,6 +1,6 @@
 """
-Contains some useful callbacks for profiling in the Hugging Face Trainer. 
--------------------------------------------------------------------------
+Callbacks for profiling in the Hugging Face Trainer. 
+----------------------------------------------------
 
 Module :mod:`profiler_callbacks` contains the callbacks for performing memory profiling, stack profiling, and timing of the training.
 The following of the callbacks log to W&B:
