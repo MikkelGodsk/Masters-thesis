@@ -66,7 +66,23 @@ class TemplateFormatter:   # If more datasets enter the game, we should use inhe
         self.ds = ds
         self.tokenizer = tokenizer
 
-        if tokenizer.name_or_path == "meta-llama/Llama-2-7b-hf":
+        self.tokenizer, self.instruction_template, self.response_template = self.prepare_tokenizer_and_templates(tokenizer)
+
+        self.map_kwargs = {'remove_columns': ["conversations", "source"]}
+        self.data_processor = partial(process_example, tokenizer=self.tokenizer)
+
+        self.train_ds, self.test_ds = self.process_lima()
+        self.collator = DataCollatorForCompletionOnlyLM(
+            tokenizer=tokenizer, 
+            mlm=False, 
+            instruction_template=self.instruction_template, 
+            response_template=self.response_template
+        )
+
+    def prepare_tokenizer_and_templates(self, tokenizer):
+        """Adds special tokens to the tokenizer."""
+        if tokenizer.name_or_path in ["meta-llama/Llama-2-7b-hf", "meta-llama/Llama-2-7b-chat-hf"]:
+            tokenizer.add_special_tokens({'pad_token': '<PAD>'})
             instruction_template = '[INST]'
             response_template = '[/INST]'
         elif tokenizer.name_or_path == "facebook/opt-125m":
@@ -76,20 +92,7 @@ class TemplateFormatter:   # If more datasets enter the game, we should use inhe
             tokenizer.chat_template = new_opt_chat_template
             instruction_template = None
             response_template = tokenizer.sep_token
-
-        self.instruction_template = instruction_template
-        self.response_template = response_template
-
-        self.map_kwargs = {'remove_columns': ["conversations", "source"]}
-        self.data_processor = partial(process_example, tokenizer=self.tokenizer)
-
-        self.train_ds, self.test_ds = self.process_lima()
-        self.collator = DataCollatorForCompletionOnlyLM(
-            tokenizer=tokenizer, 
-            mlm=False, 
-            instruction_template=instruction_template, 
-            response_template=response_template
-        )
+        return tokenizer, instruction_template, response_template
 
     def process_lima(self):
         train_ds = self.ds['train'].filter(filter_example).map(self.data_processor, **self.map_kwargs)
@@ -111,9 +114,11 @@ class TemplateFormatter:   # If more datasets enter the game, we should use inhe
         collated_x = self.collator.torch_call([x_tokenized['input_ids'][0]])
         input_ids = collated_x['input_ids']
         labels = collated_x['labels']
-        instruction = self.tokenizer.decode(input_ids[labels == self.collator.ignore_index])
-        response = self.tokenizer.decode(input_ids[labels != self.collator.ignore_index])
-        return instruction, response
+        tokenized_instruction = input_ids[..., labels == self.collator.ignore_index]
+        tokenized_response = input_ids[..., labels != self.collator.ignore_index]
+        instruction = self.tokenizer.decode(tokenized_instruction)
+        response = self.tokenizer.decode(tokenized_response)
+        return instruction, response, tokenized_instruction, tokenized_response
     
     def remove_prompt_from_completion(self, tokenized_prompt, tokenized_completion):
         """Takes a completion (which includes the prompt), and then removes the prompt from it.
@@ -127,6 +132,13 @@ class TemplateFormatter:   # If more datasets enter the game, we should use inhe
         """
         skip_tokens = tokenized_prompt.shape[-1]
         return tokenized_completion[..., skip_tokens:]
+    
+    def clean_tokenized_prompt(self, tokenized_prompt):
+        """Cleans the sep/eos token from the prompt, if it exists."""
+        keep_idx = (tokenized_prompt != self.tokenizer.eos_token_id)
+        if self.tokenizer.sep_token_id is not None:
+            keep_idx = keep_idx & (tokenized_prompt != self.tokenizer.sep_token_id)
+        return tokenized_prompt[keep_idx]
 
 
 # If more datasets enter the game, put this in a "trainer_callbacks.py" file alongside the other callbacks for profiling...
@@ -178,11 +190,10 @@ class ExampleCallback(TrainerCallback):   # Source: https://docs.wandb.ai/guides
             # Sample training examples (mostly for debugging purposes...)
             text_table = wandb.Table(columns=["prompt", "suggested completion", "model's completion"])
             for example in tqdm(self.train_ds[np.random.randint(self.len_train_ds, size=self.log_n_examples)]['text'], desc="Sampling training examples"):
-                prompt, suggested_completion = self.template_formatter.get_instruction_and_response(example)
-                tokenized_prompt = tokenizer.encode(prompt, return_tensors="pt")
-                if tokenized_prompt[..., -1] == tokenizer.sep_token_id: tokenized_prompt = tokenized_prompt[..., :-1]  # Remove the separator token
-                tokenized_completion = model.generate(tokenized_prompt.cuda(), max_length=self.max_seq_length)
-                tokenized_completion = self.template_formatter.remove_prompt_from_completion(tokenized_prompt, tokenized_completion)
+                prompt, suggested_completion, tokenized_instruction, _ = self.template_formatter.get_instruction_and_response(example)
+                #tokenized_prompt = tokenizer.encode(prompt, return_tensors="pt")
+                tokenized_completion = model.generate(tokenized_instruction.unsqueeze(0).cuda(), max_length=self.max_seq_length)
+                tokenized_completion = self.template_formatter.remove_prompt_from_completion(tokenized_instruction, tokenized_completion)
                 completion = tokenizer.decode(token_ids=tokenized_completion.squeeze(0), skip_special_tokens=False)
                 text_table.add_data(prompt, suggested_completion, completion)
             wandb.log({"Training examples": text_table})
@@ -190,11 +201,10 @@ class ExampleCallback(TrainerCallback):   # Source: https://docs.wandb.ai/guides
             # Evaluate on eval set
             eval_table = wandb.Table(columns=["prompt", "model's completion"])
             for prompt in tqdm(self.eval_ds[np.random.randint(self.len_eval_ds, size=self.log_n_examples)]['text'], desc="Evaluating model on eval set"):
-                prompt, _ = self.template_formatter.get_instruction_and_response(prompt)
-                tokenized_prompt = tokenizer.encode(prompt, return_tensors="pt")
-                if tokenized_prompt[..., -1] == tokenizer.sep_token_id: tokenized_prompt = tokenized_prompt[..., :-1]  # Remove the separator token
-                tokenized_completion = model.generate(tokenized_prompt.cuda(), max_length=self.max_seq_length)
-                tokenized_completion = self.template_formatter.remove_prompt_from_completion(tokenized_prompt, tokenized_completion)
+                prompt, suggested_completion, tokenized_instruction, _ = self.template_formatter.get_instruction_and_response(example)
+                #tokenized_prompt = tokenizer.encode(prompt, return_tensors="pt")
+                tokenized_completion = model.generate(tokenized_instruction.unsqueeze(0).cuda(), max_length=self.max_seq_length)
+                tokenized_completion = self.template_formatter.remove_prompt_from_completion(tokenized_instruction, tokenized_completion)
                 completion = tokenizer.decode(token_ids=tokenized_completion.squeeze(0), skip_special_tokens=False)  # Keep in mind that the prompt is included in the completion
                 eval_table.add_data(prompt, completion)
             wandb.log({"eval": eval_table})

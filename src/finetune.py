@@ -84,15 +84,7 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima",
     logging_dir = os.path.join(OUTPUT_DIR, 'logs', experiment_name)                 # Becomes "OUTPUT_DIR/logs/<experiment_name>"
 
     # Tokenizer setup
-    SPECIAL_TOKENS_DICT = {}
-    if model_name == "facebook/opt-125m":
-        pass
-    elif model_name == "meta-llama/Llama-2-7b-hf":
-        SPECIAL_TOKENS_DICT['pad_token'] = '</s>'
-    elif model_name == "meta-llama/Llama-2-7b-chat-hf":
-        SPECIAL_TOKENS_DICT['pad_token'] = '</s>'
-
-    tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=cache_dir, **SPECIAL_TOKENS_DICT)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=cache_dir)
 
     # Model setup
     lora_config = LoraConfig(   # https://huggingface.co/docs/peft/developer_guides/lora
