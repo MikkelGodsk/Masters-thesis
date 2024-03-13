@@ -26,9 +26,9 @@ To run this experiment, simply run the `backprop_trick_time_small_ann.sh` job.
 #### Experiments with OPT-125m and Llama-2
 To run the experiments, use the following files:
 - For the standard backprop + SGD: `finetune-opt-125m-backprop-test-False-sgd.sh`
-- For the standard backprop + Adam: `finetune-opt-125m-backrpop-test-False-adam.sh`
-- For the memory efficient back propagation + SGD: `finetune-opt-125m-backrpop-test-True-sgd.sh`
-- For the memory efficient back propagation + Adam: `finetune-opt-125m-backrpop-test-True-sgd.sh`
+- For the standard backprop + Adam: `finetune-opt-125m-backprop-test-False-adam.sh`
+- For the memory efficient back propagation + SGD: `finetune-opt-125m-backprop-test-True-sgd.sh`
+- For the memory efficient back propagation + Adam: `finetune-opt-125m-backprop-test-True-sgd.sh`
 - For Adam + LoRA + 8 bit quantization: `finetune-opt-125m-LoRA-test-adam.sh`
 
 The files are named similarly for the llama-versions.
