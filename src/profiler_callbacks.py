@@ -294,6 +294,36 @@ class MemoryHistoryCallback(ProfilerCallbackBase):
         print(f"CUDA memory recording saved to {file_name} (go to https://pytorch.org/memory_viz to read this file - note that the stack grows upwards in the trace!)\n\n")
 
 
+def profile_this(out_path=os.getcwd()):   # Not tested yet
+    """A decorator for profiling a function. It will profile the function and save the data to disk.
+
+    Args:
+        out_path (str, optional): The path which we write the profiling logs to. Defaults to `os.getcwd()`.
+    """
+    def profile_this_decorator(func):
+        def wrapper(*args, **kwargs):
+            torch.cuda.empty_cache()
+            torch.cuda.memory._record_memory_history(enabled='all')   # Maybe running both profilers at once will introduce a lot of overhead?
+            with torch.profiler.profile(
+                activities=[
+                    torch.profiler.ProfilerActivity.CPU,
+                    torch.profiler.ProfilerActivity.CUDA,
+                ],
+                record_shapes=True,
+                with_stack=True,
+                profile_memory=True,
+            ) as prof:
+                result = func(*args, **kwargs)
+            s = torch.cuda.memory._snapshot()
+            prof.export_chrome_trace(os.path.join(out_path, "stack_trace_decorator_{time()}.json"))
+            with open(os.path.join(out_path, "cuda_memory_trace_decorator_{time()}.pickle"), "wb") as f:
+                pickle.dump(s, f)
+            torch.cuda.memory._record_memory_history(enabled=None)
+            return result
+        return wrapper
+    return profile_this_decorator
+
+
 # Apparently the rule in Python is to define the functions before they're called, not before they're used in another function...
 def extract_memory_timeline_svg(profiler, file_path: Optional[str] = None, device: Optional[str] = None, figsize=(20, 12), title=None, save_file=True):
     """
