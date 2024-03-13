@@ -17,7 +17,7 @@ model_name:str="facebook/opt-125m"
 dataset_name:str="GAIR/lima"
 
 OUTPUT_DIR = os.getenv("OUTPUT_DIR_MSC")
-experiment_name = ""
+experiment_name = "profiling_backprop_trick"
 
 os.environ['WANDB_PROJECT'] = 'lima_ft_'+model_name.split('/')[1]
 os.environ['WANDB_DIR'] = os.path.join(OUTPUT_DIR, 'logs')                      # Becomes 'OUTPUT_DIR/logs/wandb'
@@ -25,6 +25,8 @@ os.environ['WANDB_CACHE_DIR'] = os.path.join(OUTPUT_DIR, 'cache_dir', 'wandb')  
 cache_dir = os.path.join(OUTPUT_DIR, 'cache_dir', 'huggingface')                # Becomes "OUTPUT_DIR/cache_dir/huggingface"
 checkpoint_dir = os.path.join(OUTPUT_DIR, 'checkpoints', experiment_name)       # Becomes "OUTPUT_DIR/checkpoints/<experiment_name>"
 logging_dir = os.path.join(OUTPUT_DIR, 'logs', experiment_name)                 # Becomes "OUTPUT_DIR/logs/<experiment_name>"
+
+if not os.path.isdir(logging_dir): os.mkdir(logging_dir)
 
 # Tokenizer setup
 tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=cache_dir)
@@ -50,8 +52,6 @@ if True:
     lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)
 
 
-
-
 x = train_ds[0]
 x_tokenized = tokenizer.encode(x['text'], return_tensors="pt")
 collated_x = template_formatter.collator.torch_call([x_tokenized[0]])
@@ -74,11 +74,16 @@ with torch.profiler.profile(
 import pickle
 out_path = logging_dir
 s = torch.cuda.memory._snapshot()
-prof.export_chrome_trace(os.path.join(out_path, "stack_trace_decorator_{time()}.json"))
-with open(os.path.join(out_path, "cuda_memory_trace_decorator_{time()}.pickle"), "wb") as f:
+prof.export_chrome_trace(os.path.join(out_path, f"stack_trace_decorator_{time()}.json"))
+with open(os.path.join(out_path, f"cuda_memory_trace_decorator_{time()}.pickle"), "wb") as f:
     pickle.dump(s, f)
 torch.cuda.memory._record_memory_history(enabled=None)
 
+for param in model.parameters():
+    if param.grad is not None:
+        print(param)
+
+#print(model.model.embed_tokens.grad)
 
 if False:
     training_args = TrainingArguments(
