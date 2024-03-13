@@ -22,6 +22,8 @@ def get_experiment_name(
         fp32:bool,
         tf32:bool,
         backprop_trick:bool,
+        backprop_trick_optimizer:str,
+        foreach:bool,
     ):
     name = ""
     name += dataset_name.split('/')[1]
@@ -32,6 +34,8 @@ def get_experiment_name(
     name += "-amp_fp32" if fp32 else ""
     name += "-amp_tf32" if tf32 else ""
     name += "-backprop_trick" if backprop_trick else ""
+    name += f"-{backprop_trick_optimizer}" if backprop_trick else ""
+    name += f"-foreach-{foreach}" if backprop_trick else ""	
     name += f"-{int(time())}"
     return name
 
@@ -44,6 +48,9 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima",
          resume_from_checkpoint:str=None,
          output_dir: str=None, 
          test: bool=False, n_test_batches: int=10,
+         backprop_trick_optimizer:str='adam',
+         foreach:bool=True,  # Don't use this...
+         no_eval:bool=False,
          backprop_trick:bool=False):
     """Finetunes the given model on the given dataset.
 
@@ -62,6 +69,8 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima",
         output_dir: The directory where the output will be stored.
         test: Whether we are running test code. If so, you may also want to set n_test_batches to a small number.
         n_test_batches: Number of batches used for testing if test is True. Set e.g. to 1 for overfitting to a single batch (to check if the model is set up correctly).
+        backprop_trick: Whether to use the backprop trick for training.
+        backprop_trick_optimizer: The optimizer to use for the backprop trick (if enabled). Can be "adam" or "sgd".
     """
 
     # Environment setup
@@ -72,7 +81,7 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima",
     if OUTPUT_DIR is None: OUTPUT_DIR = output_dir
 
     if resume_from_checkpoint is None:
-        experiment_name = get_experiment_name(model_name, dataset_name, test, use_lora, use_quantization, fp16, tf32, backprop_trick)
+        experiment_name = get_experiment_name(model_name, dataset_name, test, use_lora, use_quantization, fp16, tf32, backprop_trick, backprop_trick_optimizer, foreach)
     else:
         experiment_name = resume_from_checkpoint
 
@@ -115,7 +124,12 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima",
     # Setup backprop trick if needed
     if backprop_trick:
         from backprop_trick import MotherOptimizer
-        optimizer = MotherOptimizer(model.parameters(), torch.optim.Adam, lr=1e-3)
+        backprop_trick_optimizer = backprop_trick_optimizer.lower()
+        if backprop_trick_optimizer == 'adam':
+            optimizer_cls = torch.optim.Adam
+        elif backprop_trick_optimizer == 'sgd':
+            optimizer_cls = torch.optim.SGD
+        optimizer = MotherOptimizer(model.parameters(), optimizer_cls, lr=1e-3, foreach=foreach)
         for param_group in optimizer.param_groups:
             param_group['initial_lr'] = 1e-3
         lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)
@@ -155,7 +169,8 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima",
     else:
         # If profile is false, the setup is WandBProfilerCallback,.WandBTimerCallback and ExampleCallback.
         callbacks.append(WandBProfilerCallback(profile_epochs=[], profile_n_steps=5, repeat_every_n_steps=profiler_repeat_every_n_steps))
-    callbacks.append(ExampleCallback(template_formatter, max_seq_length=max_seq_length))
+    if not no_eval:
+        callbacks.append(ExampleCallback(template_formatter, max_seq_length=max_seq_length))
     callbacks.append(WandBTimerCallback())
     
     trainer = SFTTrainer(

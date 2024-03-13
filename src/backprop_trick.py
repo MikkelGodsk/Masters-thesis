@@ -40,6 +40,7 @@ def fusion_step_hook(param: torch.nn.Parameter, optimizer: torch.optim.Optimizer
     """
     optimizer.step()
     param.grad = None
+    #optimizer.zero_grad()   # This increases the runtime quite a lot, but the memory footprint is exactly the same as with `param.grad = None`
 
 
 ParamsT: TypeAlias = Union[Iterable[torch.Tensor], Iterable[Dict[str, Any]]]
@@ -140,6 +141,13 @@ class MotherOptimizer(torch.optim.Optimizer):
                params: ParamsT, 
                optimizer_cls: Type[torch.optim.Optimizer], 
                **optimizer_defaults: Dict[str, Any]):
+    """Constructor for MotherOptimizer
+
+        Args:
+            params (Iterable[torch.Tensor] or Iterable[Dict[str, Any]]): An iterable of torch.Tensor or Dict objects. If the elements are torch.Tensor, they will be treated as individual parameters. If the elements are Dict objects we will use parameter groups (each with their own hyperparameters). Then they must have a 'params' key, which is an iterable of torch.Tensor objects. The other keys in the Dict objects will be used as hyperparameters for the optimizer.
+            optimizer_cls (Type[torch.optim.Optimizer]): The optimizer class to use for the child optimizers.
+            **optimizer_defaults (Dict[str, Any]): The default parameters to pass to the optimizer as a dictionary of kwargs (used if the parameters are not specified as a parameter group) in the params argument.
+    """
     self._prepare_model(params, optimizer_cls, **optimizer_defaults)         # creates self.optimizer_list, self.param_groups, and registers the fusion_step_hook with all parameters...
     super().__init__(self.param_groups, {})
 
