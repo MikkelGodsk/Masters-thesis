@@ -133,13 +133,6 @@ class TemplateFormatter:   # If more datasets enter the game, we should use inhe
         skip_tokens = tokenized_prompt.shape[-1]
         return tokenized_completion[..., skip_tokens:]
     
-    def clean_tokenized_prompt(self, tokenized_prompt):
-        """Cleans the sep/eos token from the prompt, if it exists."""
-        keep_idx = (tokenized_prompt != self.tokenizer.eos_token_id)
-        if self.tokenizer.sep_token_id is not None:
-            keep_idx = keep_idx & (tokenized_prompt != self.tokenizer.sep_token_id)
-        return tokenized_prompt[keep_idx]
-
 
 # If more datasets enter the game, put this in a "trainer_callbacks.py" file alongside the other callbacks for profiling...
 class ExampleCallback(TrainerCallback):   # Source: https://docs.wandb.ai/guides/integrations/huggingface#custom-logging-log-and-view-evaluation-samples-during-training
