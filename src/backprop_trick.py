@@ -206,7 +206,8 @@ class MotherOptimizer(torch.optim.Optimizer):
 
     # Setup hooks
     for optimizer in self.child_optimizers:
-        p = optimizer.param_groups[0]['params'][0]  # As the optimizers have one parameter each!
+      p = optimizer.param_groups[0]['params'][0]  # As the optimizers have one parameter each!
+      if p.requires_grad:
         hook = partial(fusion_step_hook, optimizer=optimizer)  # Partially evaluate with the matching optimizer reference
         p.register_post_accumulate_grad_hook(hook)
     

@@ -93,3 +93,20 @@ def test_backprop_trick_small_ann_with_parameter_groups():
     optimizer2 = MotherOptimizer(net2_param_group, torch.optim.Adam, lr=0.01)
     consistency_check(net1, net2, optimizer1, optimizer2, (5,50), (5,1))
 
+
+def test_backprop_trick_one_layer_does_not_require_grads():
+    net1 = ANN()
+    net2 = ANN(net1)
+    net1_param_group = [
+        {'params': list(net1.dense_1.parameters()) + list(net1.dense_2.parameters()), 'lr': 0.1, 'betas': [0.9, 0.999]},
+        {'params': net1.dense_3.parameters(), 'lr': 0.01, 'betas': [0.1, 0.12]},
+    ]
+    net2_param_group = [
+        {'params': list(net2.dense_1.parameters()) + list(net2.dense_2.parameters()), 'lr': 0.1, 'betas': [0.9, 0.999]},
+        {'params': net2.dense_3.parameters(), 'lr': 0.01, 'betas': [0.1, 0.12]},
+    ]
+    net1.dense_1.requires_grad = False
+    net2.dense_1.requires_grad = False
+    optimizer1 = torch.optim.Adam(net1_param_group, lr=0.01)
+    optimizer2 = MotherOptimizer(net2_param_group, torch.optim.Adam, lr=0.01)
+    consistency_check(net1, net2, optimizer1, optimizer2, (5,50), (5,1))
