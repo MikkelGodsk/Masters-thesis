@@ -14,9 +14,9 @@
 #BSUB -R "rusage[mem=20GB]"
 
 ### -- set the job Name --
-#BSUB -J Finetune_llama-2-7b-lima_test
+#BSUB -J Finetune_llama-2-7b-lima
 ### -- set walltime limit: hh:mm --  maximum 24 hours for GPU-queues right now
-#BSUB -W 4:00
+#BSUB -W 24:00
 
 ### Set start time
 ###BSUB -b 21:20
@@ -44,4 +44,4 @@ cd $HOME/msc/src
 
 #export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
-python finetune.py --model "meta-llama/Llama-2-7b-hf" --num_epochs 2 --max_seq_length 256 --tf32 True --use_lora True --use_quantization True --test True
+python finetune.py --model "meta-llama/Llama-2-7b-hf" --num_epochs 15 --max_seq_length 1024 --tf32 True --backprop_trick True --optimizer sgd
