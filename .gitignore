@@ -29,3 +29,4 @@ profile
 .pytest_cache
 old_but_gold
 Masters-thesis.code-workspace
+tests/temp_data

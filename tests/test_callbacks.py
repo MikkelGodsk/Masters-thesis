@@ -5,6 +5,11 @@ from transformers import AutoTokenizer
 from datasets import load_dataset
 import torch
 
+from model_factories import Factory
+from tests.cache_dir import cache_dir
+
+
+
 
 class MockWandbTable:
     def __init__(self):
@@ -40,11 +45,8 @@ def test_wandb_example_callback():
     model_name = "meta-llama/Llama-2-7b-hf"
     dataset_name = "GAIR/lima"
 
-    OUTPUT_DIR = os.getenv("OUTPUT_DIR_MSC")
-    cache_dir = os.path.join(OUTPUT_DIR, 'cache_dir', 'huggingface') 
-
     model = MockModel()
-    tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=cache_dir)
+    tokenizer = Factory.spawn_factory(model_name, cache_dir).spawn_tokenizer()
     ds = load_dataset(dataset_name, 'plain_text', cache_dir=cache_dir)
     template_formatter = lima_utils.TemplateFormatter(ds, tokenizer)
     callback = lima_utils.ExampleCallback(template_formatter)

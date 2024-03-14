@@ -36,6 +36,14 @@ src.profiler\_callbacks module
    :undoc-members:
    :show-inheritance:
 
+src.model\_factories module
+------------------------------
+
+.. automodule:: src.model_factories
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

@@ -11,6 +11,7 @@ from time import time
 
 from profiler_callbacks import TorchProfilerCallback, MemoryHistoryCallback, WandBProfilerCallback, WandBTimerCallback
 from lima_utils import *
+from model_factories import Factory
 
 
 def get_experiment_name(
@@ -23,7 +24,6 @@ def get_experiment_name(
         tf32:bool,
         backprop_trick:bool,
         optimizer:str,
-        foreach:bool,
     ):
     name = ""
     name += dataset_name.split('/')[1]
@@ -35,7 +35,6 @@ def get_experiment_name(
     name += "-amp_tf32" if tf32 else ""
     name += "-backprop_trick" if backprop_trick else ""
     name += f"-{optimizer}"
-    name += f"-foreach-{foreach}" if backprop_trick else ""	
     name += f"-{int(time())}"
     return name
 
@@ -47,11 +46,10 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima",
          profile:bool=False, profiler_repeat_every_n_steps:int=-1,
          resume_from_checkpoint:str=None,
          output_dir: str=None, 
-         test: bool=False, n_test_batches: int=10,
+         test: bool=False, n_test_batches: int=10, test_batch_size: int = 1,
          optimizer:str='adamw_torch',
-         foreach:bool=True,  # Don't use this...
          no_eval:bool=False,
-         backprop_trick:bool=False):
+         backprop_trick:bool=True):
     """Finetunes the given model on the given dataset.
 
     Args:
@@ -81,7 +79,7 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima",
     if OUTPUT_DIR is None: OUTPUT_DIR = output_dir
 
     if resume_from_checkpoint is None:
-        experiment_name = get_experiment_name(model_name, dataset_name, test, use_lora, use_quantization, fp16, tf32, backprop_trick, optimizer, foreach)
+        experiment_name = get_experiment_name(model_name, dataset_name, test, use_lora, use_quantization, fp16, tf32, backprop_trick, optimizer)
     else:
         experiment_name = resume_from_checkpoint
 
@@ -92,61 +90,26 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima",
     checkpoint_dir = os.path.join(OUTPUT_DIR, 'checkpoints', experiment_name)       # Becomes "OUTPUT_DIR/checkpoints/<experiment_name>"
     logging_dir = os.path.join(OUTPUT_DIR, 'logs', experiment_name)                 # Becomes "OUTPUT_DIR/logs/<experiment_name>"
 
-    # Tokenizer setup
-    tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=cache_dir)
-
-    # Model setup
-    lora_config = LoraConfig(   # https://huggingface.co/docs/peft/developer_guides/lora
-        r=16,
-        lora_alpha=8,
-        target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
-        lora_dropout=0.05,
-        bias="none",
-        task_type="CAUSAL_LM",
-    )
-    quantization_config = BitsAndBytesConfig(   # Also explains LoRA: https://huggingface.co/docs/peft/developer_guides/quantization
-        load_in_8bit=True,
-        #load_in_4bit=True,
-        bnb_4bit_compute_dtype=torch.bfloat16,
-        bnb_4bit_use_double_quant=True,
-        bnb_4bit_quant_type='nf4',
-    )
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name, 
-        cache_dir=cache_dir, 
-        quantization_config=quantization_config if use_quantization else None,
-        device_map="auto",  # Not sure if the device map enables FSDP by default...
-    )
-    ## Prepare the model for kbit training (if use_quantization is True) and get the LoRA model (if use_lora is True)
-    model = prepare_model_for_kbit_training(model) if use_quantization else model
-    model = get_peft_model(model, lora_config) if use_lora else model
-    
-    # Setup backprop trick if needed
-    if backprop_trick:
-        from backprop_trick import MotherOptimizer
-        optimizer = optimizer.lower()
-        if optimizer == 'adam':
-            optimizer_cls = torch.optim.Adam
-        elif optimizer == 'sgd':
-            optimizer_cls = torch.optim.SGD
-        optimizer = MotherOptimizer(model.parameters(), optimizer_cls, lr=1e-3, foreach=foreach)
-        for param_group in optimizer.param_groups:
-            param_group['initial_lr'] = 1e-3
-        lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)
+    # Set up model and tokenizer
+    factory = Factory.spawn_factory(model_name, cache_dir=cache_dir)
+    if use_lora and use_quantization:       factory.setup_peft()
+    if backprop_trick:                      factory.setup_mebp()
+    model, optimizer, lr_scheduler = factory.spawn_model()
+    tokenizer = factory.spawn_tokenizer()
 
     # Dataset setup
     ds = load_dataset(dataset_name, 'plain_text', cache_dir=cache_dir)
     template_formatter = TemplateFormatter(ds, tokenizer)
     train_ds, test_ds = template_formatter.train_ds, template_formatter.test_ds
     if test: 
-        train_ds = Dataset.from_dict(train_ds[0:n_test_batches])
+        train_ds = Dataset.from_dict(train_ds[0:n_test_batches*test_batch_size])
 
     # Trainer setup
     if tf32: 
         torch.backends.cuda.matmul.allow_tf32 = True
     training_args = TrainingArguments(
         num_train_epochs=num_epochs,
-        per_device_train_batch_size=1 if test else 16,
+        per_device_train_batch_size=test_batch_size if test else 16,
         lr_scheduler_type="cosine",
         gradient_accumulation_steps=1,
         gradient_checkpointing=gradient_checkpointing,
@@ -183,7 +146,7 @@ def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima",
         train_dataset=train_ds,
         max_seq_length=max_seq_length,
         callbacks=callbacks,
-        optimizers=(optimizer, lr_scheduler) if backprop_trick else (None, None),
+        optimizers=(optimizer, lr_scheduler),   # If backprop_trick is False, this is set to (None, None) by the factory...
     )
     trainer.train(resume_from_checkpoint=resume_from_checkpoint is not None)
 

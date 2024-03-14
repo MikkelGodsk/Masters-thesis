@@ -1,11 +1,14 @@
 import pytest
 import warnings
+import os
 
 from transformers import AutoTokenizer
 from trl.trainer import DataCollatorForCompletionOnlyLM
 from datasets import load_dataset
 
 from src.lima_utils import TemplateFormatter
+from src.model_factories import Factory
+from tests.cache_dir import cache_dir
 
 
 def fail_on_warning(func):
@@ -47,8 +50,12 @@ def test_data_formatter_exact_match():
     global correct_llama_train_instruction, correct_llama_train_response, correct_llama_test_instruction
     global correct_opt_train_instruction, correct_opt_train_response, correct_opt_test_instruction
     dataset_name:str="GAIR/lima"
-    tokenizer_opt = AutoTokenizer.from_pretrained("facebook/opt-125m")
-    tokenizer_llama = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
+    #tokenizer_opt = AutoTokenizer.from_pretrained("facebook/opt-125m")
+    #tokenizer_llama = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
+    opt_factory = Factory.spawn_factory("opt", cache_dir)
+    tokenizer_opt = opt_factory.spawn_tokenizer()
+    llama_factory = Factory.spawn_factory("llama2", cache_dir)
+    tokenizer_llama = llama_factory.spawn_tokenizer()
     ds = load_dataset(dataset_name, 'plain_text')
 
     # NOTE: The instruction templates can be read from `tokenizer.default_chat_template`
@@ -93,8 +100,11 @@ def test_data_formatter_exact_match():
 def test_data_formatter_all_examples_no_warning():
     # Stress test: Can we use it without failing even once?
     dataset_name:str="GAIR/lima"
-    tokenizer_opt = AutoTokenizer.from_pretrained("facebook/opt-125m")
-    tokenizer_llama = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
+
+    opt_factory = Factory.spawn_factory("facebook/opt-125m", cache_dir)
+    tokenizer_opt = opt_factory.spawn_tokenizer()
+    llama_factory = Factory.spawn_factory("meta-llama/Llama-2-7b-hf", cache_dir)
+    tokenizer_llama = llama_factory.spawn_tokenizer()
     ds = load_dataset(dataset_name, 'plain_text')
 
     # NOTE: The instruction templates can be read from `tokenizer.default_chat_template`

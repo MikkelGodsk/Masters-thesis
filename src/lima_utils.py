@@ -66,7 +66,11 @@ class TemplateFormatter:   # If more datasets enter the game, we should use inhe
         self.ds = ds
         self.tokenizer = tokenizer
 
-        self.tokenizer, self.instruction_template, self.response_template = self.prepare_tokenizer_and_templates(tokenizer)
+        # Note these attributes were added to the tokenizer in the `spawn_tokenizer` method of the `Factory` class
+        assert hasattr(tokenizer, "instruction_template"), "The tokenizer must have an instruction template (added via the factory)"
+        assert hasattr(tokenizer, "response_template"), "The tokenizer must have a response template (added via the factory)"
+        self.instruction_template = tokenizer.instruction_template
+        self.response_template = tokenizer.response_template 
 
         self.map_kwargs = {'remove_columns': ["conversations", "source"]}
         self.data_processor = partial(process_example, tokenizer=self.tokenizer)
@@ -78,21 +82,6 @@ class TemplateFormatter:   # If more datasets enter the game, we should use inhe
             instruction_template=self.instruction_template, 
             response_template=self.response_template
         )
-
-    def prepare_tokenizer_and_templates(self, tokenizer):
-        """Adds special tokens to the tokenizer."""
-        if tokenizer.name_or_path in ["meta-llama/Llama-2-7b-hf", "meta-llama/Llama-2-7b-chat-hf"]:
-            tokenizer.add_special_tokens({'pad_token': '<PAD>'})
-            instruction_template = '[INST]'
-            response_template = '[/INST]'
-        elif tokenizer.name_or_path == "facebook/opt-125m":
-            # With opt, we need to change the chat template, because it's pretty bad...
-            from chat_templates.new_opt_chat_template import new_opt_chat_template
-            tokenizer.add_special_tokens({'sep_token': '<SEP>'})
-            tokenizer.chat_template = new_opt_chat_template
-            instruction_template = None
-            response_template = tokenizer.sep_token
-        return tokenizer, instruction_template, response_template
 
     def process_lima(self):
         train_ds = self.ds['train'].filter(filter_example).map(self.data_processor, **self.map_kwargs)
