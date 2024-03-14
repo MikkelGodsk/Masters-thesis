@@ -153,6 +153,7 @@ class ExampleCallback(TrainerCallback):   # Source: https://docs.wandb.ai/guides
         self.len_train_ds = len(self.train_ds)
         self.len_eval_ds = len(self.eval_ds)
         self.log_n_examples = log_n_examples
+        self._log_iter = 0
 
     def on_log(self, args, state, control, logs=None, **kwargs):
         """Logs the model responses to randomly selected training examples and eval examples.
@@ -167,7 +168,7 @@ class ExampleCallback(TrainerCallback):   # Source: https://docs.wandb.ai/guides
         # Kwargs contains keys: ['model', 'tokenizer', 'optimizer', 'lr_scheduler', 'train_dataloader', 'eval_dataloader']
         model = kwargs["model"]
         tokenizer = kwargs["tokenizer"]
-        
+
         with torch.no_grad():
             # Sample training examples (mostly for debugging purposes...)
             text_table = wandb.Table(columns=["prompt", "suggested completion", "model's completion"])
@@ -178,7 +179,7 @@ class ExampleCallback(TrainerCallback):   # Source: https://docs.wandb.ai/guides
                 tokenized_completion = self.template_formatter.remove_prompt_from_completion(tokenized_instruction, tokenized_completion)
                 completion = tokenizer.decode(token_ids=tokenized_completion.squeeze(0), skip_special_tokens=False)
                 text_table.add_data(prompt, suggested_completion, completion)
-            wandb.log({"Training examples": text_table})
+            wandb.log({f"Training examples {self._log_iter}": text_table})
             
             # Evaluate on eval set
             eval_table = wandb.Table(columns=["prompt", "model's completion"])
@@ -189,6 +190,7 @@ class ExampleCallback(TrainerCallback):   # Source: https://docs.wandb.ai/guides
                 tokenized_completion = self.template_formatter.remove_prompt_from_completion(tokenized_instruction, tokenized_completion)
                 completion = tokenizer.decode(token_ids=tokenized_completion.squeeze(0), skip_special_tokens=False)  # Keep in mind that the prompt is included in the completion
                 eval_table.add_data(prompt, completion)
-            wandb.log({"eval": eval_table})
+            wandb.log({f"Eval examples {self._log_iter}": eval_table})
 
+        self._log_iter += 1
 

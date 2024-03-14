@@ -54,14 +54,14 @@ def test_wandb_example_callback():
     assert len(lima_utils.wandb.logs) == 0
 
     callback.on_log(args="", state="", control="", model=model, tokenizer=tokenizer)  # args, state, control, logs=None, **kwargs
-    for prompt, suggested_competion, _ in lima_utils.wandb.logs[0]["Training examples"].logs:
+    for prompt, suggested_competion, _ in lima_utils.wandb.logs[0]["Training examples 0"].logs:
         for special_token in tokenizer.all_special_tokens:
             if special_token != tokenizer.bos_token:
                 assert special_token not in prompt
             if special_token != tokenizer.eos_token:
                 assert special_token not in suggested_competion
 
-    for prompt, suggested_competion in lima_utils.wandb.logs[1]["eval"].logs:
+    for prompt, suggested_competion in lima_utils.wandb.logs[1]["Eval examples 0"].logs:
         for special_token in tokenizer.all_special_tokens:
             if special_token != tokenizer.bos_token:
                 assert special_token not in prompt
