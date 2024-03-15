@@ -187,18 +187,18 @@ class Llama2Factory(Factory):
     """Sets up the LLaMa2 models and tokenizers. Refer to: https://huggingface.co/docs/transformers/main/model_doc/llama2
     """
     def __init__(self, *args, version: str = '7b', pretrained_config: Optional[LlamaConfig] = None, **kwargs):
-        pad_token_id = 31999
-        if pretrained_config is not None:
-            pretrained_config.pad_token_id = pad_token_id
-        else:
-            pretrained_config = LlamaConfig(pad_token_id=pad_token_id)
+        #pad_token_id = 31999
+        #if pretrained_config is not None:
+        #    pretrained_config.pad_token_id = pad_token_id   # Unfortunately this does not work... The model simply cannot figure it out, it seems...
+        #else:
+        #    pretrained_config = LlamaConfig(pad_token_id=pad_token_id)
         self.model_name = f'meta-llama/Llama-2-{version}-hf'
         super().__init__(*args, pretrained_config=pretrained_config, **kwargs)
 
     def spawn_tokenizer(self):
         tokenizer = super().spawn_tokenizer()
-        tokenizer.add_special_tokens({"pad_token":"<pad>"})
-        #tokenizer.pad_token = tokenizer.eos_token   # Alternative approach, that leaves the code complaining a bit... We would ideally like to avoid this.
+        #tokenizer.add_special_tokens({"pad_token":"<pad>"})   # Unfortunately this does not work... The model simply cannot figure it out, it seems...
+        tokenizer.pad_token = tokenizer.eos_token   # Alternative approach, that leaves the code complaining a bit... We would ideally like to avoid this.
         tokenizer.instruction_template = '[INST]'
         tokenizer.response_template = '[/INST]'
         return tokenizer
