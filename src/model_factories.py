@@ -1,3 +1,29 @@
+"""
+Correctly configures the models and tokenizers for the different architectures.
+-------------------------------------------------------------------------------
+
+The reason for this module is that we don't want to deal with correctly setting up the models in the main script. 
+Each model has its own quirks and needs for being set up correctly. This module takes care of that.
+
+To introduce a new model, you need to do the following:
+    
+        1. Create a new subclass of `Factory` and override the methods as needed. Take inspiration from the existing subclasses.
+        2. Register the new subclass in the `factory_dict` dictionary.
+
+To use the module, you can do the following::
+    
+            factory = Factory.spawn_factory('LLaMA')
+            factory.setup_peft(lora_config, quantization_config)
+            factory.setup_model(**model_args)
+            factory.setup_tokenizer(**tokenizer_args)
+            factory.setup_mebp(torch.optim.SGD, torch.optim.lr_scheduler.CosineAnnealingLR)
+            model = factory.spawn_model()
+            tokenizer = factory.spawn_tokenizer()
+
+Note that none of the `setup_...` calls are mandatory. If you don't call them, the default values will be used (i.e. no PEFT, no MEbP, default model settings, default tokenizer settings etc.).
+Here the idea is that the model should be correctly configured when just doing `factory.spawn_model()`, i.e. all the necessary model-specific configurations are done automatically, abstracted entirely away from the user.
+"""
+
 from typing import Optional, Dict, Any, Type, Tuple
 
 import torch
@@ -29,7 +55,7 @@ class Factory:
 
     Example usage::
 
-        factory = FactoryBase.spawn_factory('LLaMA')
+        factory = FactoryBase.spawn_factory('LLaMA', cache_dir, pretrained_config)
         factory.setup_peft(lora_config, quantization_config)
         factory.setup_model(**model_args)
         factory.setup_tokenizer(**tokenizer_args)
@@ -45,7 +71,7 @@ class Factory:
     device_map: str
     model_kwargs: Optional[Dict]
     tokenizer_kwargs: Optional[Dict]
-    use_mebp: bool
+    use_mebp: bool = False
     optimizer_cls: Type[torch.optim.Optimizer] = None
     lr_scheduler_cls: Type[torch.optim.lr_scheduler._LRScheduler] = None
     optimizer_kwargs: Optional[Dict[str, Any]]
@@ -160,16 +186,18 @@ class Llama2Factory(Factory):
     """Sets up the LLaMa2 models and tokenizers. Refer to: https://huggingface.co/docs/transformers/main/model_doc/llama2
     """
     def __init__(self, *args, version: str = '7b', pretrained_config: Optional[LlamaConfig] = None, **kwargs):
+        pad_token_id = 31999
         if pretrained_config is not None:
-            pretrained_config.pad_token_id = -1
+            pretrained_config.pad_token_id = pad_token_id
         else:
-            pretrained_config = LlamaConfig(pad_token_id=-1)
+            pretrained_config = LlamaConfig(pad_token_id=pad_token_id)
         self.model_name = f'meta-llama/Llama-2-{version}-hf'
         super().__init__(*args, pretrained_config=pretrained_config, **kwargs)
 
     def spawn_tokenizer(self):
         tokenizer = super().spawn_tokenizer()
         tokenizer.add_special_tokens({"pad_token":"<pad>"})
+        #tokenizer.pad_token = tokenizer.eos_token   # Alternative approach, that leaves the code complaining a bit... We would ideally like to avoid this.
         tokenizer.instruction_template = '[INST]'
         tokenizer.response_template = '[/INST]'
         return tokenizer

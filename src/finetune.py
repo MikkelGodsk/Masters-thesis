@@ -38,7 +38,8 @@ def get_experiment_name(
     name += f"-{int(time())}"
     return name
 
-def main(model_name:str="facebook/opt-125m", dataset_name:str="GAIR/lima", 
+def main(model_name:str="meta-llama/Llama-2-7b-hf", #"facebook/opt-125m", 
+dataset_name:str="GAIR/lima", 
          max_seq_length: int=1024, 
          num_epochs:int=2, 
          use_lora:bool=False, use_quantization:bool=False, gradient_checkpointing:bool=True, 
