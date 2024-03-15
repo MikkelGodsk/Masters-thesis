@@ -187,18 +187,26 @@ class Llama2Factory(Factory):
     """Sets up the LLaMa2 models and tokenizers. Refer to: https://huggingface.co/docs/transformers/main/model_doc/llama2
     """
     def __init__(self, *args, version: str = '7b', pretrained_config: Optional[LlamaConfig] = None, **kwargs):
-        #pad_token_id = 31999
-        #if pretrained_config is not None:
-        #    pretrained_config.pad_token_id = pad_token_id   # Unfortunately this does not work... The model simply cannot figure it out, it seems...
-        #else:
-        #    pretrained_config = LlamaConfig(pad_token_id=pad_token_id)
+        pad_token_id = 32000
+        if pretrained_config is not None:
+            pretrained_config.pad_token_id = pad_token_id   # Unfortunately this does not work... The model simply cannot figure it out, it seems...
+        else:
+            pretrained_config = LlamaConfig(pad_token_id=pad_token_id)
         self.model_name = f'meta-llama/Llama-2-{version}-hf'
         super().__init__(*args, pretrained_config=pretrained_config, **kwargs)
 
+    def spawn_model(self):
+        model, optimizer, lr_scheduler = super().spawn_model()
+        #model.config.pad_token_id = model.config.eos_token_id
+        model.config.pad_token_id = 32000
+        model.resize_token_embeddings(len(model.tokenizer))   # https://www.reddit.com/r/LocalLLaMA/comments/15hz7gl/comment/jw4vrdx/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
+        return model, optimizer, lr_scheduler
+
     def spawn_tokenizer(self):
         tokenizer = super().spawn_tokenizer()
-        #tokenizer.add_special_tokens({"pad_token":"<pad>"})   # Unfortunately this does not work... The model simply cannot figure it out, it seems...
-        tokenizer.pad_token = tokenizer.eos_token   # Alternative approach, that leaves the code complaining a bit... We would ideally like to avoid this.
+        tokenizer.add_special_tokens({"pad_token":"<pad>"})   # Unfortunately this does not work... The model simply cannot figure it out, it seems...
+        #tokenizer.pad_token = tokenizer.eos_token   # According to this reddit post, this could lead to the text generation not terminating... https://www.reddit.com/r/LocalLLaMA/comments/15hz7gl/my_finetuning_based_on_llama27bchathf_model/
+                                                    # See this github issue: https://github.com/huggingface/transformers/issues/22794#issuecomment-1598977285
         tokenizer.instruction_template = '[INST]'
         tokenizer.response_template = '[/INST]'
         return tokenizer
