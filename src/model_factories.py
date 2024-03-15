@@ -121,7 +121,7 @@ class Factory:
         self.tokenizer_kwargs = tokenizer_kwargs
 
     def setup_mebp(self, 
-                   optimizer_cls: Type[torch.optim.Optimizer] = torch.optim.Adam,
+                   optimizer_cls: Type[torch.optim.Optimizer] = torch.optim.SGD,
                    lr_scheduler_cls: Type[torch.optim.lr_scheduler._LRScheduler] = torch.optim.lr_scheduler.CosineAnnealingLR,
                    optimizer_kwargs: Optional[Dict[str, Any]] = {},
                    lr_scheduler_kwargs: Optional[Dict[str, Any]] = {},

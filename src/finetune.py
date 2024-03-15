@@ -21,6 +21,7 @@ def get_experiment_name(
         tf32:bool,
         backprop_trick:bool,
         optimizer:str,
+        batch_size:int, 
     ):
     name = ""
     name += dataset_name.split('/')[1]
@@ -32,6 +33,7 @@ def get_experiment_name(
     name += "-amp_tf32" if tf32 else ""
     name += "-backprop_trick" if backprop_trick else ""
     name += f"-{optimizer}"
+    name += f"-batch_size-{batch_size}"
     name += f"-{int(time())}"
     return name
 
@@ -44,6 +46,7 @@ def main(model_name:str="facebook/opt-125m",
          profile:bool=False, profiler_repeat_every_n_steps:int=-1,
          resume_from_checkpoint:str=None,
          output_dir: str=None, 
+         batch_size:int = 16,
          test: bool=False, n_test_batches: int=10, test_batch_size: int = 1,
          optimizer:str='adamw_torch',
          no_eval:bool=False,
@@ -77,7 +80,7 @@ def main(model_name:str="facebook/opt-125m",
     if OUTPUT_DIR is None: OUTPUT_DIR = output_dir
 
     if resume_from_checkpoint is None:
-        experiment_name = get_experiment_name(model_name, dataset_name, test, use_lora, use_quantization, fp16, tf32, backprop_trick, optimizer)
+        experiment_name = get_experiment_name(model_name, dataset_name, test, use_lora, use_quantization, fp16, tf32, backprop_trick, optimizer, batch_size)
     else:
         experiment_name = resume_from_checkpoint
 
@@ -91,7 +94,9 @@ def main(model_name:str="facebook/opt-125m",
     # Set up model and tokenizer
     factory = Factory.spawn_factory(model_name, cache_dir=cache_dir)
     if use_lora and use_quantization:       factory.setup_peft()
-    if backprop_trick:                      factory.setup_mebp()
+    if backprop_trick:
+        optimizer_clss = {'adam': torch.optim.Adam, 'sgd': torch.optim.SGD, 'adamw_torch': torch.optim.AdamW, 'adamw': torch.optim.AdamW}
+        factory.setup_mebp(optimizer_cls=optimizer_clss[optimizer])
     m = factory.spawn_model()
     model, optimizer_and_lr_scheduler = m[0], m[1:]   # I use `optimizer_and_lr_scheduler` here to avoid interfering with the `optimizer` argument.
     tokenizer = factory.spawn_tokenizer()
@@ -108,7 +113,7 @@ def main(model_name:str="facebook/opt-125m",
         torch.backends.cuda.matmul.allow_tf32 = True
     training_args = TrainingArguments(
         num_train_epochs=num_epochs,
-        per_device_train_batch_size=test_batch_size if test else 16,
+        per_device_train_batch_size=test_batch_size if test else batch_size,
         lr_scheduler_type="cosine",
         gradient_accumulation_steps=1,
         gradient_checkpointing=gradient_checkpointing,
