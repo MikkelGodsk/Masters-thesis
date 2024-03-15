@@ -2,10 +2,10 @@
 
 ### GPU and CPU related parameters for a simple GPU job script
 ### select a GPU queue
-#BSUB -q gpua100
+#BSUB -q gpuv100
 ### request the number of GPUs
 #BSUB -gpu "num=1:mode=exclusive_process"
-#BSUB -R "select[gpu80gb]"
+#BSUB -R "select[gpu32gb]"
 ### request the number of CPU cores (at least 4x the number of GPUs)
 #BSUB -n 4
 ### we want to have this on a single node
@@ -14,7 +14,7 @@
 #BSUB -R "rusage[mem=20GB]"
 
 ### -- set the job Name --
-#BSUB -J Finetune_llama-2-7b-lima_test
+#BSUB -J Finetune_llama-2-7b-lima-test
 ### -- set walltime limit: hh:mm --  maximum 24 hours for GPU-queues right now
 #BSUB -W 2:00
 
@@ -44,4 +44,4 @@ cd $HOME/msc/src
 
 #export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
-python finetune.py --model "meta-llama/Llama-2-7b-hf" --num_epochs 2 --max_seq_length 256 --tf32 True --use_lora False --use_quantization True --backprop_trick True --test True --n_test_batches 5 --test_batch_size 2 --optimizer sgd
+python finetune.py --model "meta-llama/Llama-2-7b-hf" --num_epochs 1 --max_seq_length 256 --use_lora True --use_quantization True --optimizer sgd

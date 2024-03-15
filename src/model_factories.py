@@ -196,17 +196,27 @@ class Llama2Factory(Factory):
         super().__init__(*args, pretrained_config=pretrained_config, **kwargs)
 
     def spawn_model(self):
-        model, optimizer, lr_scheduler = super().spawn_model()
+        self._auto_setup()
+        model = AutoModelForCausalLM.from_pretrained(
+            self.model_name, 
+            cache_dir=self.cache_dir,
+            device_map=self.device_map,
+            quantization_config=self.quantization_config,
+            config = self.pretrained_config,
+        )
         #model.config.pad_token_id = model.config.eos_token_id
+
+        # To be a bit on the safe side, I set up this before PEFT, although doing so after might also be okay (just one more .model call to do...)
         model.config.pad_token_id = 32000
         model.resize_token_embeddings(32001)   # https://www.reddit.com/r/LocalLLaMA/comments/15hz7gl/comment/jw4vrdx/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
-        print(type(model))
-        print(type(model.model))
-        print(dir(model.model), flush=True)
-        print(model.config.pad_token_id, model.model.embed_tokens.padding_idx, model.model.embed_tokens.weight.shape, flush=True)
         model.model.padding_idx = 32000
         model.model.embed_tokens.padding_idx = 32000
-        return model, optimizer, lr_scheduler
+
+        if self.quantization_config is not None:
+            model = prepare_model_for_kbit_training(model)
+        if self.lora_config is not None:
+            model = get_peft_model(model, self.lora_config)
+        return self._wrap_mebp(model)
 
     def spawn_tokenizer(self):
         tokenizer = super().spawn_tokenizer()
