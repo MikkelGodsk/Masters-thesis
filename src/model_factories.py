@@ -187,11 +187,11 @@ class Llama2Factory(Factory):
     """Sets up the LLaMa2 models and tokenizers. Refer to: https://huggingface.co/docs/transformers/main/model_doc/llama2
     """
     def __init__(self, *args, version: str = '7b', pretrained_config: Optional[LlamaConfig] = None, **kwargs):
-        pad_token_id = 32000
-        if pretrained_config is not None:
-            pretrained_config.pad_token_id = pad_token_id   # Unfortunately this does not work... The model simply cannot figure it out, it seems...
-        else:
-            pretrained_config = LlamaConfig(pad_token_id=pad_token_id)
+        #pad_token_id = 32000
+        #if pretrained_config is not None:
+        #    pretrained_config.pad_token_id = pad_token_id   # Unfortunately this does not work... The model simply cannot figure it out, it seems...
+        #else:
+        #    pretrained_config = LlamaConfig(pad_token_id=pad_token_id)
         self.model_name = f'meta-llama/Llama-2-{version}-hf'
         super().__init__(*args, pretrained_config=pretrained_config, **kwargs)
 
@@ -199,7 +199,13 @@ class Llama2Factory(Factory):
         model, optimizer, lr_scheduler = super().spawn_model()
         #model.config.pad_token_id = model.config.eos_token_id
         model.config.pad_token_id = 32000
-        model.resize_token_embeddings(len(model.tokenizer))   # https://www.reddit.com/r/LocalLLaMA/comments/15hz7gl/comment/jw4vrdx/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
+        model.resize_token_embeddings(32001)   # https://www.reddit.com/r/LocalLLaMA/comments/15hz7gl/comment/jw4vrdx/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
+        print(type(model))
+        print(type(model.model))
+        print(dir(model.model), flush=True)
+        print(model.config.pad_token_id, model.model.embed_tokens.padding_idx, model.model.embed_tokens.weight.shape, flush=True)
+        model.model.padding_idx = 32000
+        model.model.embed_tokens.padding_idx = 32000
         return model, optimizer, lr_scheduler
 
     def spawn_tokenizer(self):
