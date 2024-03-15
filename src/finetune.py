@@ -1,16 +1,13 @@
-from transformers import AutoTokenizer, AutoModelForCausalLM
-from transformers import TrainingArguments, BitsAndBytesConfig
-from peft import get_peft_model, prepare_model_for_kbit_training, LoraConfig  # https://huggingface.co/docs/peft/developer_guides/quantization  https://discuss.huggingface.co/t/typeerror-llamaforcausallm-init-got-an-unexpected-keyword-argument-load-in-4bit/41245
+from transformers import TrainingArguments
 from trl import SFTTrainer
-from transformers.integrations import WandbCallback
-from trl.trainer import DataCollatorForCompletionOnlyLM
 from datasets import load_dataset, Dataset
 import torch
 import os
 from time import time
+from typing import Tuple, Optional
 
 from profiler_callbacks import TorchProfilerCallback, MemoryHistoryCallback, WandBProfilerCallback, WandBTimerCallback
-from lima_utils import *
+from lima_utils import TemplateFormatter, ExampleCallback
 from model_factories import Factory
 
 
@@ -38,8 +35,8 @@ def get_experiment_name(
     name += f"-{int(time())}"
     return name
 
-def main(model_name:str="meta-llama/Llama-2-7b-hf", #"facebook/opt-125m", 
-dataset_name:str="GAIR/lima", 
+def main(model_name:str="facebook/opt-125m", 
+         dataset_name:str="GAIR/lima", 
          max_seq_length: int=1024, 
          num_epochs:int=2, 
          use_lora:bool=False, use_quantization:bool=False, gradient_checkpointing:bool=True, 
@@ -50,7 +47,7 @@ dataset_name:str="GAIR/lima",
          test: bool=False, n_test_batches: int=10, test_batch_size: int = 1,
          optimizer:str='adamw_torch',
          no_eval:bool=False,
-         backprop_trick:bool=True):
+         backprop_trick:bool=False):
     """Finetunes the given model on the given dataset.
 
     Args:
@@ -95,7 +92,8 @@ dataset_name:str="GAIR/lima",
     factory = Factory.spawn_factory(model_name, cache_dir=cache_dir)
     if use_lora and use_quantization:       factory.setup_peft()
     if backprop_trick:                      factory.setup_mebp()
-    model, optimizer, lr_scheduler = factory.spawn_model()
+    m = factory.spawn_model()
+    model, optimizer_and_lr_scheduler = m[0], m[1:]   # I use `optimizer_and_lr_scheduler` here to avoid interfering with the `optimizer` argument.
     tokenizer = factory.spawn_tokenizer()
 
     # Dataset setup
@@ -124,7 +122,7 @@ dataset_name:str="GAIR/lima",
         save_strategy="epoch",
         fp16=fp16,
         tf32=tf32,
-        optim=optimizer if not backprop_trick else "adamw_torch",
+        optim=optimizer,    # If `backprop_trick == True`, then this argument is simply ignored, as we pass `optimizer_and_lr_scheduler` to the trainer.
     )
     callbacks = []
     if profile:
@@ -147,7 +145,7 @@ dataset_name:str="GAIR/lima",
         train_dataset=train_ds,
         max_seq_length=max_seq_length,
         callbacks=callbacks,
-        optimizers=(optimizer, lr_scheduler),   # If backprop_trick is False, this is set to (None, None) by the factory...
+        optimizers=optimizer_and_lr_scheduler,   # If backprop_trick is False, this is set to (None, None) by the factory...
     )
     trainer.train(resume_from_checkpoint=resume_from_checkpoint is not None)
 

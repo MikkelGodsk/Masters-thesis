@@ -44,4 +44,4 @@ cd $HOME/msc/src
 
 #export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
-python finetune.py --model "meta-llama/Llama-2-7b-hf" --num_epochs 2 --max_seq_length 256 --tf32 True --use_lora True --use_quantization True --test True --n_test_batches 5 --test_batch_size 2 --optimizer sgd
+python finetune.py --model "meta-llama/Llama-2-7b-hf" --num_epochs 2 --max_seq_length 256 --tf32 True --use_lora True --use_quantization True --backprop_trick False --test True --n_test_batches 5 --test_batch_size 2 --optimizer sgd

@@ -137,6 +137,7 @@ class Factory:
             self.lr_scheduler_kwargs['T_max'] = 10
 
     def _wrap_mebp(self, model: torch.nn.Module) -> Tuple[torch.nn.Module, Optional[torch.optim.Optimizer], Optional[torch.optim.lr_scheduler._LRScheduler]]:
+        optimizer, lr_scheduler = None, None
         if self.use_mebp:
             optimizer = MotherOptimizer(
                 model.parameters(), 
@@ -149,7 +150,7 @@ class Factory:
             lr_scheduler = self.lr_scheduler_cls(optimizer, **self.lr_scheduler_kwargs)
         return model, optimizer, lr_scheduler
 
-    def spawn_model(self) -> torch.nn.Module:
+    def spawn_model(self) -> Tuple[torch.nn.Module, Optional[torch.optim.Optimizer], Optional[torch.optim.lr_scheduler._LRScheduler]]:
         self._auto_setup()
         model = AutoModelForCausalLM.from_pretrained(
             self.model_name, 
