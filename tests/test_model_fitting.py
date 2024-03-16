@@ -1,3 +1,13 @@
+"""Overfits the model to a small batch of data to check if the model can learn.
+-------------------------------------------------------------------------------
+
+Do yourself a favor, and run this at HPC. It's going to take a while.
+How to run it at HPC::
+
+    pytest tests/test_model_fitting.py
+
+"""
+
 import os
 
 import torch
@@ -32,7 +42,7 @@ def overfit_to_small_batch(model_name, dataset_name, mock_model_name, checkpoint
 
     # Trainer setup
     training_args = TrainingArguments(
-        num_train_epochs=1000,#2000,
+        num_train_epochs=7500,
         lr_scheduler_type="cosine",
         gradient_accumulation_steps=1,
         per_device_train_batch_size=2,
@@ -64,13 +74,15 @@ def test_overfit_to_small_batch_opt():
     mock_model_name:str = model_name #'hf-internal-testing/tiny-random-OPTForCausalLM'   # Mock model doesn't seem to work for training - Has another embedding dimension...
     dataset_name:str="GAIR/lima"
     train_loss = overfit_to_small_batch(model_name, dataset_name, mock_model_name, checkpoint_dir)
+    print(train_loss)
     assert torch.isclose(torch.tensor(train_loss), torch.tensor(0.0), atol=1e-2)
 
 
-def test_overfit_to_small_batch_opt_backprop_trick():   # takes approx. 50 mins. to run on a GTX 960
+def test_overfit_to_small_batch_opt_backprop_trick():
     checkpoint_dir = os.path.join(OUTPUT_DIR, 'checkpoints', 'test_overfit_to_small_batch_opt_backprop_trick')
     model_name:str="facebook/opt-125m"
     mock_model_name:str = model_name #'hf-internal-testing/tiny-random-OPTForCausalLM'   # Mock model doesn't seem to work for training - Has another embedding dimension...
     dataset_name:str="GAIR/lima"
     train_loss = overfit_to_small_batch(model_name, dataset_name, mock_model_name, checkpoint_dir, backprop_trick=True)
+    print(train_loss)
     assert torch.isclose(torch.tensor(train_loss), torch.tensor(0.0), atol=1e-2)
