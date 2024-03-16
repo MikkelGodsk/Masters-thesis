@@ -99,7 +99,7 @@ class TemplateFormatter:   # If more datasets enter the game, we should use inhe
         """
         if isinstance(x, str):
             x = {'text': [x]}
-        x_tokenized = self.tokenizer(x['text'], return_tensors='pt')
+        x_tokenized = self.tokenizer(x['text'], return_tensors='pt', add_special_tokens=True)   # Had to be set to True, as we changed the chat template
         collated_x = self.collator.torch_call([x_tokenized['input_ids'][0]])
         input_ids = collated_x['input_ids']
         labels = collated_x['labels']
@@ -183,8 +183,8 @@ class ExampleCallback(TrainerCallback):   # Source: https://docs.wandb.ai/guides
             
             # Evaluate on eval set
             eval_table = wandb.Table(columns=["prompt", "model's completion"])
-            for prompt in tqdm(self.eval_ds[np.random.randint(self.len_eval_ds, size=self.log_n_examples)]['text'], desc="Evaluating model on eval set"):
-                prompt, suggested_completion, tokenized_instruction, _ = self.template_formatter.get_instruction_and_response(example)
+            for example in tqdm(self.eval_ds[np.random.randint(self.len_eval_ds, size=self.log_n_examples)]['text'], desc="Evaluating model on eval set"):
+                prompt, _, tokenized_instruction, _ = self.template_formatter.get_instruction_and_response(example)
                 #tokenized_prompt = tokenizer.encode(prompt, return_tensors="pt")
                 tokenized_completion = model.generate(tokenized_instruction.unsqueeze(0).cuda(), max_length=self.max_seq_length)
                 tokenized_completion = self.template_formatter.remove_prompt_from_completion(tokenized_instruction, tokenized_completion)

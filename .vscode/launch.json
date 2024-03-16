@@ -12,6 +12,12 @@
             "console": "integratedTerminal",
             "justMyCode": false,
             "pythonArgs": ["-Xfrozen_modules=off"],
+        },
+        {
+            "name": "Debug Unit Test",
+            "type": "python",
+            "request": "test",
+            "justMyCode": false,
         }
     ]
 }

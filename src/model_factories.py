@@ -186,13 +186,11 @@ class Factory:
 class Llama2Factory(Factory):
     """Sets up the LLaMa2 models and tokenizers. Refer to: https://huggingface.co/docs/transformers/main/model_doc/llama2
     """
-    def __init__(self, *args, version: str = '7b', pretrained_config: Optional[LlamaConfig] = None, **kwargs):
-        #pad_token_id = 32000
-        #if pretrained_config is not None:
-        #    pretrained_config.pad_token_id = pad_token_id   # Unfortunately this does not work... The model simply cannot figure it out, it seems...
-        #else:
-        #    pretrained_config = LlamaConfig(pad_token_id=pad_token_id)
-        self.model_name = f'meta-llama/Llama-2-{version}-hf'
+    def __init__(self, *args, version: str = '7b', model_name:str|None=None, pretrained_config: Optional[LlamaConfig] = None, **kwargs):
+        if model_name is not None:
+            self.model_name = model_name
+        else:
+            self.model_name = f'meta-llama/Llama-2-{version}-hf'
         super().__init__(*args, pretrained_config=pretrained_config, **kwargs)
 
     def spawn_model(self):
@@ -204,7 +202,6 @@ class Llama2Factory(Factory):
             quantization_config=self.quantization_config,
             config = self.pretrained_config,
         )
-        #model.config.pad_token_id = model.config.eos_token_id
 
         # To be a bit on the safe side, I set up this before PEFT, although doing so after might also be okay (just one more .model call to do...)
         model.config.pad_token_id = 32000
@@ -220,9 +217,10 @@ class Llama2Factory(Factory):
 
     def spawn_tokenizer(self):
         tokenizer = super().spawn_tokenizer()
-        tokenizer.add_special_tokens({"pad_token":"<pad>"})   # Unfortunately this does not work... The model simply cannot figure it out, it seems...
-        #tokenizer.pad_token = tokenizer.eos_token   # According to this reddit post, this could lead to the text generation not terminating... https://www.reddit.com/r/LocalLLaMA/comments/15hz7gl/my_finetuning_based_on_llama27bchathf_model/
-                                                    # See this github issue: https://github.com/huggingface/transformers/issues/22794#issuecomment-1598977285
+        tokenizer.add_special_tokens({"pad_token":"<pad>"})
+        new_chat_template = tokenizer.default_chat_template
+        new_chat_template = new_chat_template.replace("bos_token + ", "")
+        tokenizer.chat_template = new_chat_template
         tokenizer.instruction_template = '[INST]'
         tokenizer.response_template = '[/INST]'
         return tokenizer
@@ -235,10 +233,13 @@ class OptFactory(Factory):
     """Sets up the OPT models and tokenizers. Refer to: https://huggingface.co/docs/transformers/main/model_doc/opt
     """
     # Implementations specific to OptFactory
-    def __init__(self, *args, version: str = '125m', **kwargs):
+    def __init__(self, *args, version: str = '125m', model_name: str|None=None, **kwargs):
         from chat_templates.new_opt_chat_template import new_opt_chat_template
         super().__init__(*args, **kwargs)
-        self.model_name = f'facebook/opt-{version}'
+        if model_name is not None:
+            self.model_name = model_name
+        else:
+            self.model_name = f'facebook/opt-{version}'
         self.new_opt_chat_template = new_opt_chat_template
 
     def spawn_tokenizer(self):
