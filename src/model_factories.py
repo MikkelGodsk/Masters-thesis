@@ -116,9 +116,11 @@ class Factory:
     def setup_model(self, device_map:str="auto", model_kwargs: Optional[Dict] = {}) -> None:
         self.device_map = device_map
         self.model_kwargs = model_kwargs
+        self._model_was_set_up = True
 
     def setup_tokenizer(self, tokenizer_kwargs: Optional[Dict] = {}):
         self.tokenizer_kwargs = tokenizer_kwargs
+        self._tokenizer_was_set_up = True
 
     def setup_mebp(self, 
                    optimizer_cls: Type[torch.optim.Optimizer] = torch.optim.SGD,
