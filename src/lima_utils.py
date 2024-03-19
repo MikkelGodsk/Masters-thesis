@@ -107,28 +107,48 @@ class TemplateFormatter:  # If more datasets enter the game, we should use inher
         )
         return train_ds, test_ds
 
-    def get_instruction_and_response(self, x):
+    def _find_prompt_begin(self, input_ids):
+        for i, token_id in enumerate(input_ids):
+            if token_id != self.tokenizer.pad_token_id:
+                return i
+
+    def _find_prompt_end(self, label):
+        for i, token_label in enumerate(label):
+            if token_label != self.collator.ignore_index:
+                return i
+        return i+1   # If it is only a prompt, then the end is at the end of the sequence.
+
+    def get_instruction_and_response(self, examples):
         """Splits the input into an instruction and a response using the data collator - i.e. in the same way as the SFTTrainer does it.
 
         Args:
-            x (str or dict): The input.
+            examples (list): The inputs in strings.
 
         Returns:
-            tuple: The instruction and the response (both as strings).
+            tuple: The tokenized instructions and suggested completions.
         """
-        if isinstance(x, str):
-            x = {"text": [x]}
-        x_tokenized = self.tokenizer(
-            x["text"], return_tensors="pt", add_special_tokens=True
-        )  # Had to be set to True, as we changed the chat template
-        collated_x = self.collator.torch_call([x_tokenized["input_ids"][0]])
-        input_ids = collated_x["input_ids"]
-        labels = collated_x["labels"]
-        tokenized_instruction = input_ids[..., labels == self.collator.ignore_index]
-        tokenized_response = input_ids[..., labels != self.collator.ignore_index]
-        instruction = self.tokenizer.decode(tokenized_instruction)
-        response = self.tokenizer.decode(tokenized_response)
-        return instruction, response, tokenized_instruction, tokenized_response
+        # Set the padding side to ensure proper generation...
+        prev_padding_side = self.tokenizer.padding_side
+        self.tokenizer.padding_side = 'left'
+
+        # Tokenize the examples and figure out what's the prompt and what's the response
+        x_tokenized = self.tokenizer(examples, add_special_tokens=True)['input_ids']
+        collated_x = self.collator.torch_call(x_tokenized)
+        input_ids = collated_x['input_ids']     # Just the input_ids, nothing has been touched here
+        labels = collated_x['labels']           # The labels indicating what's the prompt (+padding), and what's the response.
+        prompt_begin_idx = torch.tensor([self._find_prompt_begin(x) for x in input_ids])
+        prompt_end_idx = torch.tensor([self._find_prompt_end(label) for label in labels])
+        tokenized_instructions = [x[prompt_begin_idx[i]:prompt_end_idx[i]] for i, x in enumerate(input_ids)]
+        tokenized_suggested_completions = [x[prompt_end_idx[i]:] for i, x in enumerate(input_ids)]
+
+        # Pad the tokenized instructions and suggested completions
+        padded_instructions = self.tokenizer.pad({'input_ids': tokenized_instructions}, return_tensors='pt')
+        padded_tokenized_completions = self.tokenizer.pad({'input_ids': tokenized_suggested_completions}, return_tensors='pt')
+        
+        # Revert to the original padding side not to disturb the training (I don't know if this is necessary, but just to be safe)
+        self.tokenizer.padding_side = prev_padding_side
+        
+        return padded_instructions, padded_tokenized_completions
 
     def remove_prompt_from_completion(self, tokenized_prompt, tokenized_completion):
         """Takes a completion (which includes the prompt), and then removes the prompt from it.
@@ -198,63 +218,50 @@ class ExampleCallback(
         """
         # Kwargs contains keys: ['model', 'tokenizer', 'optimizer', 'lr_scheduler', 'train_dataloader', 'eval_dataloader']
         model = kwargs["model"]
-        tokenizer = kwargs["tokenizer"]
 
         with torch.no_grad():
-            # Sample training examples (mostly for debugging purposes...)
-            text_table = wandb.Table(
-                columns=["prompt", "suggested completion", "model's completion"]
-            )
-            for example in tqdm(
-                self.train_ds[
-                    np.random.randint(self.len_train_ds, size=self.log_n_examples)
-                ]["text"],
-                desc="Sampling training examples",
-            ):
-                prompt, suggested_completion, tokenized_instruction, _ = (
-                    self.template_formatter.get_instruction_and_response(example)
-                )
-                # tokenized_prompt = tokenizer.encode(prompt, return_tensors="pt")
-                tokenized_completion = model.generate(
-                    tokenized_instruction.unsqueeze(0).cuda(),
-                    max_length=self.max_seq_length,
-                )
-                tokenized_completion = (
-                    self.template_formatter.remove_prompt_from_completion(
-                        tokenized_instruction, tokenized_completion
-                    )
-                )
-                completion = tokenizer.decode(
-                    token_ids=tokenized_completion.squeeze(0), skip_special_tokens=False
-                )
-                text_table.add_data(prompt, suggested_completion, completion)
-            wandb.log({f"Training examples {self._log_iter}": text_table})
+            # Sample from the training set and evaluation set.
+            training_examples = self.train_ds[
+                np.random.randint(self.len_train_ds, size=self.log_n_examples)
+            ]["text"]
+            eval_examples = self.eval_ds[
+                np.random.randint(self.len_eval_ds, size=self.log_n_examples)
+            ]["text"]
+            combined_examples = training_examples + eval_examples
 
-            # Evaluate on eval set
-            eval_table = wandb.Table(columns=["prompt", "model's completion"])
-            for example in tqdm(
-                self.eval_ds[
-                    np.random.randint(self.len_eval_ds, size=self.log_n_examples)
-                ]["text"],
-                desc="Evaluating model on eval set",
-            ):
-                prompt, _, tokenized_instruction, _ = (
-                    self.template_formatter.get_instruction_and_response(example)
-                )
-                # tokenized_prompt = tokenizer.encode(prompt, return_tensors="pt")
-                tokenized_completion = model.generate(
-                    tokenized_instruction.unsqueeze(0).cuda(),
-                    max_length=self.max_seq_length,
-                )
-                tokenized_completion = (
-                    self.template_formatter.remove_prompt_from_completion(
-                        tokenized_instruction, tokenized_completion
+            # Generate completions and decode everything
+            padded_instructions, padded_tokenized_completions = self.template_formatter.get_instruction_and_response(
+                combined_examples
+            )
+            padded_instructions = {k: v.to(model.device) for k,v in padded_instructions.items()}
+            padded_completions = model.generate(**padded_instructions, max_length=self.max_seq_length)
+            prompts = self.template_formatter.tokenizer.batch_decode(
+                sequences=padded_instructions['input_ids'], 
+                skip_special_tokens=True, 
+                clean_up_tokenization_spaces=False
+            )
+            suggested_completions = self.template_formatter.tokenizer.batch_decode(
+                sequences=padded_tokenized_completions['input_ids'], 
+                skip_special_tokens=True, 
+                clean_up_tokenization_spaces=False
+            )
+            completions = self.template_formatter.tokenizer.batch_decode(
+                sequences=padded_completions, 
+                skip_special_tokens=True, 
+                clean_up_tokenization_spaces=False
+            )
+
+            # Log a table to Wandb
+            examples = wandb.Table(
+                columns=["prompt", "suggested completion", "model's completion"],
+                data=list(
+                    zip(
+                        prompts, 
+                        suggested_completions, 
+                        completions,
                     )
                 )
-                completion = tokenizer.decode(
-                    token_ids=tokenized_completion.squeeze(0), skip_special_tokens=False
-                )  # Keep in mind that the prompt is included in the completion
-                eval_table.add_data(prompt, completion)
-            wandb.log({f"Eval examples {self._log_iter}": eval_table})
+            )
+            wandb.log({f"Examples {self._log_iter}": examples})
 
         self._log_iter += 1
