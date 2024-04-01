@@ -32,3 +32,6 @@ To run the experiments, use the following files:
 - For Adam + LoRA + 8 bit quantization: `finetune-opt-125m-LoRA-test-adam.sh`
 
 The files are named similarly for the llama-versions.
+
+### Concept guidance
+To download the dataset, run `git clone https://github.com/saprmarks/geometry-of-truth.git` in the `src` directory.

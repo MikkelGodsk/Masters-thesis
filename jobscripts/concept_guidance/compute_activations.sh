@@ -15,7 +15,7 @@
 ### -- set the job Name --
 #BSUB -J compute_activations
 ### -- set walltime limit: hh:mm --  maximum 24 hours for GPU-queues right now
-#BSUB -W 24:00
+#BSUB -W 4:00
 
 ### Set start time
 ###BSUB -b 21:20

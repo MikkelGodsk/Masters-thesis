@@ -2,13 +2,18 @@ import torch
 import os
 import pandas as pd
 import numpy as np
-from tqdm.notebook import tqdm   # Change this
+from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from typing import List
 
 dataset_dir = 'geometry-of-truth/datasets'
 dtype = np.float32
 model_name = 'meta-llama/Llama-2-7b-hf'
+
+OUTPUT_DIR = os.getenv("OUTPUT_DIR_MSC")
+cache_dir = os.path.join(
+    OUTPUT_DIR, "cache_dir", "huggingface"
+)
 
 
 class Hook:
@@ -49,13 +54,9 @@ def compute_activations(statements: List[str], model: torch.nn.Module, tokenizer
   return np.stack(activations, axis=0)
 
 
-
-#factory = Factory.spawn_factory('llama2', version='7b')
-#model = factory.spawn_model()
-#tokenizer = factory.spawn_tokenizer()
-model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto")
-tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
+model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", cache_dir=cache_dir)
+tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True, cache_dir=cache_dir)
 
 common_claim_df = pd.read_csv(os.path.join(dataset_dir, 'common_claim_true_false.csv'))
-activations = compute_activations(common_claim_df['statement'][0:5], model, tokenizer)
-np.savez('common_claim_true_false.npz', activations=activations, labels=common_claim_df['label'])
+activations = compute_activations(common_claim_df['statement'], model, tokenizer)
+np.savez(os.path.join(OUTPUT_DIR, 'common_claim_true_false.npz'), activations=activations, labels=common_claim_df['label'])
