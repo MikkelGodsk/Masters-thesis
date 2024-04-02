@@ -6,14 +6,8 @@ from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from typing import List
 
-dataset_dir = 'geometry-of-truth/datasets'
-dtype = np.float32
-model_name = 'meta-llama/Llama-2-7b-hf'
 
-OUTPUT_DIR = os.getenv("OUTPUT_DIR_MSC")
-cache_dir = os.path.join(
-    OUTPUT_DIR, "cache_dir", "huggingface"
-)
+dtype = np.float32
 
 
 class Hook:
@@ -54,9 +48,30 @@ def compute_activations(statements: List[str], model: torch.nn.Module, tokenizer
   return np.stack(activations, axis=0)
 
 
-model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", cache_dir=cache_dir)
-tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True, cache_dir=cache_dir)
+def main(
+  dataset:str='common_claim_true_false',
+  model:str='meta-llama/Llama-2-7b-hf',
+):
+  """Computes the internal activations for each instance in the given dataset.
+  The output file is stored as `OUTPUT_DIR_MSC/{model}-{dataset}.npz`, where `OUTPUT_DIR_MSC` is an environment variable.
+  In the file, the activations are stored with the key `activations` and the labels are stored with the key `labels`.
+  
+  Args:
+      dataset (str, optional): The dataset to use. Pick one of the "true_false" datasets from the folder `src/geometry-of-truth/datasets` (NOTE: See the readme for how to install this correctly. It just needs to be cloned). Defaults to 'common_claim_true_false.npz'.
+      model (str, optional): The model name. Defaults to 'meta-llama/Llama-2-7b-hf'.
+  """
+  dataset_dir = 'geometry-of-truth/datasets'
+  OUTPUT_DIR = os.getenv("OUTPUT_DIR_MSC")
+  cache_dir = os.path.join(
+      OUTPUT_DIR, "cache_dir", "huggingface"
+  )
+  df = pd.read_csv(os.path.join(dataset_dir, dataset+'.csv'))
+  model = AutoModelForCausalLM.from_pretrained(model, device_map="auto", cache_dir=cache_dir)
+  tokenizer = AutoTokenizer.from_pretrained(model, use_fast=True, cache_dir=cache_dir)
+  activations = compute_activations(df['statement'], model, tokenizer)
+  np.savez(os.path.join(OUTPUT_DIR, dataset+'.npz'), activations=activations, labels=df['label'])
 
-common_claim_df = pd.read_csv(os.path.join(dataset_dir, 'common_claim_true_false.csv'))
-activations = compute_activations(common_claim_df['statement'], model, tokenizer)
-np.savez(os.path.join(OUTPUT_DIR, 'common_claim_true_false.npz'), activations=activations, labels=common_claim_df['label'])
+
+if __name__ == '__main__':
+  from jsonargparse import CLI
+  CLI(main)
