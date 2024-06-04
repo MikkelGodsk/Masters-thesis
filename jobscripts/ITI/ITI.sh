@@ -6,7 +6,7 @@
 #BSUB -q gpuv100
 ### request the number of GPUs
 #BSUB -gpu "num=1:mode=exclusive_process"
-###BSUB -R "select[gpu16gb]"
+###BSUB -R "select[gpu32gb]"
 ### request the number of CPU cores (at least 4x the number of GPUs)
 #BSUB -n 4
 ### we want to have this on a single node
@@ -38,7 +38,7 @@ cd $HOME/msc/src
 #export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 #jupyter nbconvert --to notebook --execute --inplace Detection_CV.ipynb
-papermill New_Inference_Time_Intervention_generalization_experiment_3.ipynb New_Inference_Time_Intervention_generalization_experiment_3_output.ipynb -p n_jobs 1 -p dtu_hpc true
+papermill New_Inference_Time_Intervention_generalization_experiment_5.ipynb New_Inference_Time_Intervention_generalization_experiment_5_output.ipynb -p n_jobs 1 -p dtu_hpc true
 
 # Apparently I can add parameters too using a tool called `papermill`. According to ChatGPT:
 # pip install papermill
