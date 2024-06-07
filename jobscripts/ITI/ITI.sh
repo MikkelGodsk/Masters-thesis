@@ -33,12 +33,12 @@ module load cudnn/v8.9.1.23-prod-cuda-12.X
 conda activate msc
 export OUTPUT_DIR_MSC=/work3/s184399/msc   # Then use os.getenv("OUTPUT_DIR") in the script
 export CUDA_LAUNCH_BLOCKING=1
-cd $HOME/msc/src
+cd $HOME/msc/notebooks
 
 #export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 #jupyter nbconvert --to notebook --execute --inplace Detection_CV.ipynb
-papermill New_Inference_Time_Intervention_generalization_experiment_5.ipynb New_Inference_Time_Intervention_generalization_experiment_5_output.ipynb -p n_jobs 1 -p dtu_hpc true
+papermill New_Inference_Time_Intervention_generalization_experiment.ipynb New_Inference_Time_Intervention_generalization_experiment_output.ipynb -p n_jobs 1 -p dtu_hpc true
 
 # Apparently I can add parameters too using a tool called `papermill`. According to ChatGPT:
 # pip install papermill

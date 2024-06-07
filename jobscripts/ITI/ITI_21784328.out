@@ -1,44 +1,0 @@
-Loaded module: cuda/12.1
-Loaded module: cudnn/v8.9.1.23-prod-cuda-12.X
-Input Notebook:  New_Inference_Time_Intervention_generalization_experiment.ipynb
-Output Notebook: New_Inference_Time_Intervention_generalization_experiment_output.ipynb
-Executing:   0%|          | 0/62 [00:00<?, ?cell/s]Executing notebook with kernel: python3
-Executing:   2%|▏         | 1/62 [00:03<04:02,  3.97s/cell]Executing:   3%|▎         | 2/62 [00:04<01:42,  1.70s/cell]Executing:   6%|▋         | 4/62 [00:04<00:40,  1.45cell/s]Executing:  10%|▉         | 6/62 [00:04<00:22,  2.47cell/s]Executing:  11%|█▏        | 7/62 [00:06<00:46,  1.17cell/s]Executing:  13%|█▎        | 8/62 [00:14<02:29,  2.78s/cell]Executing:  15%|█▍        | 9/62 [00:15<02:04,  2.35s/cell]Executing:  15%|█▍        | 9/62 [00:16<01:37,  1.83s/cell]
-Traceback (most recent call last):
-  File "/zhome/18/7/137746/miniconda3/envs/msc/bin/papermill", line 8, in <module>
-    sys.exit(papermill())
-             ^^^^^^^^^^^
-  File "/zhome/18/7/137746/miniconda3/envs/msc/lib/python3.11/site-packages/click/core.py", line 1157, in __call__
-    return self.main(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/zhome/18/7/137746/miniconda3/envs/msc/lib/python3.11/site-packages/click/core.py", line 1078, in main
-    rv = self.invoke(ctx)
-         ^^^^^^^^^^^^^^^^
-  File "/zhome/18/7/137746/miniconda3/envs/msc/lib/python3.11/site-packages/click/core.py", line 1434, in invoke
-    return ctx.invoke(self.callback, **ctx.params)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/zhome/18/7/137746/miniconda3/envs/msc/lib/python3.11/site-packages/click/core.py", line 783, in invoke
-    return __callback(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/zhome/18/7/137746/miniconda3/envs/msc/lib/python3.11/site-packages/click/decorators.py", line 33, in new_func
-    return f(get_current_context(), *args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/zhome/18/7/137746/miniconda3/envs/msc/lib/python3.11/site-packages/papermill/cli.py", line 235, in papermill
-    execute_notebook(
-  File "/zhome/18/7/137746/miniconda3/envs/msc/lib/python3.11/site-packages/papermill/execute.py", line 131, in execute_notebook
-    raise_for_execution_errors(nb, output_path)
-  File "/zhome/18/7/137746/miniconda3/envs/msc/lib/python3.11/site-packages/papermill/execute.py", line 251, in raise_for_execution_errors
-    raise error
-papermill.exceptions.PapermillExecutionError: 
----------------------------------------------------------------------------
-Exception encountered at "In [6]":
----------------------------------------------------------------------------
-KeyError                                  Traceback (most recent call last)
-Cell In[6], line 2
-      1 counterfact_true_false = pd.DataFrame(columns=["Statements", "Questions", "Choices", "CorrectAnswer", "EosAfterAnswer", "Group"])
-----> 2 for ix, (_, rows) in enumerate(dataframes['counterfact_true_false'].groupby(by=["subject","relation"])):
-      3   choices = rows['target'].tolist()
-      4   correct_answers = np.where(rows['label'])[0].tolist()
-
-KeyError: 'counterfact_true_false'
-

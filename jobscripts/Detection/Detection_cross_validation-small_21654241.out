@@ -1,45 +1,0 @@
-Loaded module: cuda/12.1
-Loaded module: cudnn/v8.9.1.23-prod-cuda-12.X
-Input Notebook:  Detection_CV_small.ipynb
-Output Notebook: Detection_CV_output_small.ipynb
-Executing:   0%|          | 0/17 [00:00<?, ?cell/s]Executing notebook with kernel: python3
-Executing:   6%|▌         | 1/17 [00:05<01:32,  5.79s/cell]Executing:  24%|██▎       | 4/17 [00:05<00:14,  1.12s/cell]Executing:  29%|██▉       | 5/17 [00:11<00:26,  2.24s/cell]
-Traceback (most recent call last):
-  File "/zhome/18/7/137746/miniconda3/envs/msc/bin/papermill", line 8, in <module>
-    sys.exit(papermill())
-             ^^^^^^^^^^^
-  File "/zhome/18/7/137746/miniconda3/envs/msc/lib/python3.11/site-packages/click/core.py", line 1157, in __call__
-    return self.main(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/zhome/18/7/137746/miniconda3/envs/msc/lib/python3.11/site-packages/click/core.py", line 1078, in main
-    rv = self.invoke(ctx)
-         ^^^^^^^^^^^^^^^^
-  File "/zhome/18/7/137746/miniconda3/envs/msc/lib/python3.11/site-packages/click/core.py", line 1434, in invoke
-    return ctx.invoke(self.callback, **ctx.params)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/zhome/18/7/137746/miniconda3/envs/msc/lib/python3.11/site-packages/click/core.py", line 783, in invoke
-    return __callback(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/zhome/18/7/137746/miniconda3/envs/msc/lib/python3.11/site-packages/click/decorators.py", line 33, in new_func
-    return f(get_current_context(), *args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/zhome/18/7/137746/miniconda3/envs/msc/lib/python3.11/site-packages/papermill/cli.py", line 235, in papermill
-    execute_notebook(
-  File "/zhome/18/7/137746/miniconda3/envs/msc/lib/python3.11/site-packages/papermill/execute.py", line 131, in execute_notebook
-    raise_for_execution_errors(nb, output_path)
-  File "/zhome/18/7/137746/miniconda3/envs/msc/lib/python3.11/site-packages/papermill/execute.py", line 251, in raise_for_execution_errors
-    raise error
-papermill.exceptions.PapermillExecutionError: 
----------------------------------------------------------------------------
-Exception encountered at "In [4]":
----------------------------------------------------------------------------
-ModuleNotFoundError                       Traceback (most recent call last)
-Cell In[4], line 10
-      8 from typing import Dict, List, Tuple
-      9 from time import time
----> 10 import seaborn as sns
-     11 from tqdm.notebook import tqdm
-     12 import pandas as pd
-
-ModuleNotFoundError: No module named 'seaborn'
-
