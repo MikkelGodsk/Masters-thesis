@@ -34,3 +34,8 @@ jupyter_notebooks
 geometry-of-truth
 src/test.ipynb
 src/test2.ipynb
+notebooks/daily-climate-time-series-data/DailyDelhiClimateTrain.csv
+notebooks/daily-climate-time-series-data/DailyDelhiClimateTest.csv
+notebooks/daily-climate-time-series-data.zip
+notebooks/trace_model_1.pickle
+notebooks/trace_model_2.pickle
