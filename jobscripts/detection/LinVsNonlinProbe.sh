@@ -1,13 +1,13 @@
 #!/bin/sh
-#BSUB -W 24:00
+#BSUB -W 72:00
 
 #BSUB -q hpc
 ### request the number of CPU cores (at least 4x the number of GPUs)
-#BSUB -n 4
+#BSUB -n 16
 ### we want to have this on a single node
 #BSUB -R "span[hosts=1]"
 ### we need to request CPU memory, too (note: this is per CPU core)
-#BSUB -R "rusage[mem=16GB]"
+#BSUB -R "rusage[mem=8GB]"
 
 ### -- set the job Name --
 #BSUB -J LinVsNonlin
@@ -33,7 +33,7 @@ cd $HOME/msc/notebooks
 #export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 #jupyter nbconvert --to notebook --execute --inplace Detection_CV.ipynb
-papermill LinearVsNonlinearProbe.ipynb LinearVsNonlinearProbe_output.ipynb -p dtu_hpc true
+papermill LinearVsNonlinearProbe.ipynb LinearVsNonlinearProbe_output.ipynb -p dtu_hpc true -p n_jobs 16
 
 # Apparently I can add parameters too using a tool called `papermill`. According to ChatGPT:
 # pip install papermill
