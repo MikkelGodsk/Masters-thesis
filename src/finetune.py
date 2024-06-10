@@ -19,6 +19,7 @@ def get_experiment_name(
     model_name: str,
     dataset_name: str,
     test: bool,
+    time_test: bool,
     use_lora: bool,
     use_quantization: bool,
     fp32: bool,
@@ -31,6 +32,7 @@ def get_experiment_name(
     name += dataset_name.split("/")[1]
     name += "-" + model_name.split("/")[1]
     name += "-test" if test else ""
+    name += "-time_test" if time_test else ""
     name += "-lora" if use_lora else ""
     name += "-quant" if use_quantization else ""
     name += "-amp_fp32" if fp32 else ""
@@ -58,6 +60,7 @@ def main(
     output_dir: str = None,
     batch_size: int = 16,
     test: bool = False,
+    time_test: bool = False,
     n_test_batches: int = 10,
     test_batch_size: int = 1,
     optimizer: str = "adamw_torch",
@@ -80,6 +83,7 @@ def main(
         resume_from_checkpoint: If not None, the path to a checkpoint to resume training from (the entire experiment will simply proceed from there...).
         output_dir: The directory where the output will be stored.
         test: Whether we are running test code. If so, you may also want to set n_test_batches to a small number.
+        time_test: Here we test the amount of time it takes to run a batch. Finding the mean and the standard deviation over 100 trials. Also logging the times into a file.
         n_test_batches: Number of batches used for testing if test is True. Set e.g. to 1 for overfitting to a single batch (to check if the model is set up correctly).
         backprop_trick: Whether to use the backprop trick for training.
         optimizer: The optimizer to use. Can only be "adam" or "sgd" if the backprop_trick is enabled.
@@ -98,6 +102,7 @@ def main(
             model_name,
             dataset_name,
             test,
+            time_test,
             use_lora,
             use_quantization,
             fp16,
@@ -149,7 +154,7 @@ def main(
     ds = load_dataset(dataset_name, "plain_text", cache_dir=cache_dir)
     template_formatter = TemplateFormatter(ds, tokenizer)
     train_ds = template_formatter.train_ds
-    if test:
+    if test or time_test:
         train_ds = Dataset.from_dict(train_ds[0 : n_test_batches * test_batch_size])
 
     # Trainer setup
@@ -171,7 +176,7 @@ def main(
         save_strategy="epoch",
         fp16=fp16,
         tf32=tf32,
-        optim=optimizer,  # If `backprop_trick == True`, then this argument is simply ignored, as we pass `optimizer_and_lr_scheduler` to the trainer.
+        optim="adamw_hf" if backprop_trick else optimizer,  # If `backprop_trick == True`, then this argument is simply ignored, as we pass `optimizer_and_lr_scheduler` to the trainer.
     )
     callbacks = []
     if profile:
@@ -207,6 +212,11 @@ def main(
         )
     callbacks.append(WandBTimerCallback())
 
+    if time_test:
+        callbacks = []   # no callbacks if we want to test the time.
+        if not os.path.isdir(logging_dir):
+            os.makedirs(logging_dir)
+
     trainer = SFTTrainer(
         model=model,
         tokenizer=tokenizer,
@@ -218,7 +228,15 @@ def main(
         callbacks=callbacks,
         optimizers=optimizer_and_lr_scheduler,  # If backprop_trick is False, this is set to (None, None) by the factory...
     )
-    trainer.train(resume_from_checkpoint=resume_from_checkpoint is not None)
+    if not time_test:
+        trainer.train(resume_from_checkpoint=resume_from_checkpoint is not None)
+    else:
+        for _ in range(100):
+            start = time()
+            trainer.train(resume_from_checkpoint=resume_from_checkpoint is not None)
+            end = time()
+            with open(os.path.join(logging_dir, f'time_test_{model_name.split("/")[-1]}_{"MEBP_" if backprop_trick else ("QLoRA_" if use_lora else "")}{optimizer}.txt'), "a") as f:
+                f.write(f"{end-start}\n")
 
 
 if __name__ == "__main__":
