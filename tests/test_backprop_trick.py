@@ -218,6 +218,7 @@ def backprop_trick_opt_no_grad_clip(optim_cls):
         num_train_epochs=1,
         full_determinism=True,
         use_cpu=True,
+        report_to="none",
         max_grad_norm=None,    # It is normalized over all parameters!  https://pytorch.org/docs/stable/generated/torch.nn.utils.clip_grad_norm_.html
     )
 
