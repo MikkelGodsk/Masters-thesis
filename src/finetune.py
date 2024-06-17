@@ -66,6 +66,7 @@ def main(
     optimizer: str = "adamw_torch",
     no_eval: bool = False,
     backprop_trick: bool = False,
+    disable_grad_clip: bool = False,
 ):
     """Finetunes the given model on the given dataset.
 
@@ -178,6 +179,8 @@ def main(
         tf32=tf32,
         optim="adamw_hf" if backprop_trick else optimizer,  # If `backprop_trick == True`, then this argument is simply ignored, as we pass `optimizer_and_lr_scheduler` to the trainer.
     )
+    if backprop_trick or disable_grad_clip:
+        training_args.max_grad_norm = None
     callbacks = []
     if profile:
         # If profile is True, the setup is TorchProfilerCallback, MemoryHistoryCallback, WandBTimerCallback, and ExampleCallback.

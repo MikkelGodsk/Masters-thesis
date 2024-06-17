@@ -43,24 +43,24 @@ export CUDA_LAUNCH_BLOCKING=1
 cd $HOME/msc/src
 
 #export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
-python finetune.py --model_name "facebook/opt-125m" --test True --profile True --backprop_trick False --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer adamw_torch --use_lora True --use_quantization True
-python finetune.py --model_name "facebook/opt-125m" --test True --profile True --backprop_trick True  --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer adamw_torch
-python finetune.py --model_name "facebook/opt-125m" --test True --profile True --backprop_trick True  --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer sgd
-python finetune.py --model_name "facebook/opt-125m" --test True --profile True --backprop_trick False --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer sgd
-python finetune.py --model_name "facebook/opt-125m" --test True --profile True --backprop_trick False --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer adamw_torch
+python finetune.py --model_name "facebook/opt-125m" --test True --profile True --backprop_trick False --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer adamw_torch --use_lora True --use_quantization True --disable_grad_clip True
+python finetune.py --model_name "facebook/opt-125m" --test True --profile True --backprop_trick True  --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer adamw_torch --disable_grad_clip True
+python finetune.py --model_name "facebook/opt-125m" --test True --profile True --backprop_trick True  --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer sgd --disable_grad_clip True
+python finetune.py --model_name "facebook/opt-125m" --test True --profile True --backprop_trick False --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer sgd --disable_grad_clip True
+python finetune.py --model_name "facebook/opt-125m" --test True --profile True --backprop_trick False --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer adamw_torch --disable_grad_clip True
 
-python finetune.py --model_name "meta-llama/Llama-2-7b-hf" --test True --profile True --backprop_trick False --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer adamw_torch --use_lora True --use_quantization True
-python finetune.py --model_name "meta-llama/Llama-2-7b-hf" --test True --profile True --backprop_trick True  --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer sgd
-python finetune.py --model_name "meta-llama/Llama-2-7b-hf" --test True --profile True --backprop_trick False --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer sgd
+python finetune.py --model_name "meta-llama/Llama-2-7b-hf" --test True --profile True --backprop_trick False --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer adamw_torch --use_lora True --use_quantization True --disable_grad_clip True
+python finetune.py --model_name "meta-llama/Llama-2-7b-hf" --test True --profile True --backprop_trick True  --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer sgd --disable_grad_clip True
+python finetune.py --model_name "meta-llama/Llama-2-7b-hf" --test True --profile True --backprop_trick False --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer sgd --disable_grad_clip True
 
 
 #export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
-python finetune.py --model_name "facebook/opt-125m" --time_test True --backprop_trick False --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer adamw_torch --use_lora True --use_quantization True
-python finetune.py --model_name "facebook/opt-125m" --time_test True --backprop_trick True  --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer adamw_torch
-python finetune.py --model_name "facebook/opt-125m" --time_test True --backprop_trick True  --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer sgd
-python finetune.py --model_name "facebook/opt-125m" --time_test True --backprop_trick False --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer sgd
-python finetune.py --model_name "facebook/opt-125m" --time_test True --backprop_trick False --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer adamw_torch
+python finetune.py --model_name "facebook/opt-125m" --time_test True --backprop_trick False --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer adamw_torch --use_lora True --use_quantization True --disable_grad_clip True
+python finetune.py --model_name "facebook/opt-125m" --time_test True --backprop_trick True  --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer adamw_torch --disable_grad_clip True
+python finetune.py --model_name "facebook/opt-125m" --time_test True --backprop_trick True  --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer sgd --disable_grad_clip True
+python finetune.py --model_name "facebook/opt-125m" --time_test True --backprop_trick False --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer sgd --disable_grad_clip True
+python finetune.py --model_name "facebook/opt-125m" --time_test True --backprop_trick False --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer adamw_torch --disable_grad_clip True
 
-python finetune.py --model_name "meta-llama/Llama-2-7b-hf" --time_test True --backprop_trick False --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer adamw_torch --use_lora True --use_quantization True
-python finetune.py --model_name "meta-llama/Llama-2-7b-hf" --time_test True --backprop_trick True  --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer sgd
-python finetune.py --model_name "meta-llama/Llama-2-7b-hf" --time_test True --backprop_trick False --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer sgd
+python finetune.py --model_name "meta-llama/Llama-2-7b-hf" --time_test True --backprop_trick False --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer adamw_torch --use_lora True --use_quantization True --disable_grad_clip True
+python finetune.py --model_name "meta-llama/Llama-2-7b-hf" --time_test True --backprop_trick True  --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer sgd --disable_grad_clip True
+python finetune.py --model_name "meta-llama/Llama-2-7b-hf" --time_test True --backprop_trick False --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer sgd --disable_grad_clip True

@@ -47,9 +47,6 @@ def fusion_step_hook(param: torch.nn.Parameter, optimizer: torch.optim.Optimizer
 ParamsT: TypeAlias = Union[Iterable[torch.Tensor], Iterable[Dict[str, Any]]]
 
 
-### Changes to the algorithm:
-#### The VirtualParameterGroup now sets only the parameters in the optimizer...
-#### The VirtualParameterGroup doesn't care about the child parameter groups... Those are owned solely by the optimizer... But whenever queried, it goes in and reads them...
 class VirtualParameterGroup(
     Dict
 ):  # https://stackoverflow.com/questions/3387691/how-to-perfectly-override-a-dict
@@ -217,8 +214,8 @@ class MotherOptimizer(torch.optim.Optimizer):
                     VirtualParameterGroup(associated_optimizers)
                 )
 
-        if isinstance(param_group, torch.Tensor):
-            virtual_param_groups = [VirtualParameterGroup(optimizers)]
+            if isinstance(param_group, torch.Tensor):
+                virtual_param_groups = [VirtualParameterGroup(optimizers)]
         return optimizers, virtual_param_groups
 
     def _prepare_model(
@@ -251,6 +248,16 @@ class MotherOptimizer(torch.optim.Optimizer):
                     fusion_step_hook, optimizer=optimizer
                 )  # Partially evaluate with the matching optimizer reference
                 p.register_post_accumulate_grad_hook(hook)
+
+    def load_state_dict(self, state_dict: Dict[str, Any]) -> None:
+        # Loads the state dict into the child optimizers. Written by Copilot
+        for optimizer, state_dict in zip(self.child_optimizers, state_dict["child_optimizers"]):
+            optimizer.load_state_dict(state_dict)
+
+    def state_dict(self) -> Dict[str, Any]:
+        # Compiles a state dict. (https://pytorch.org/docs/stable/generated/torch.optim.Optimizer.state_dict.html). Written by Copilot
+        return {"child_optimizers": [optimizer.state_dict() for optimizer in self.child_optimizers]}
+
 
 
 """

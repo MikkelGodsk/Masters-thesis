@@ -1,5 +1,9 @@
 import torch
 
+from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments
+from trl import SFTTrainer
+from datasets import load_dataset, Dataset
+
 from src.backprop_trick import MotherOptimizer, VirtualParameterGroup
 from tests.backprop_trick_test_utils import ANN, consistency_check
 
@@ -178,3 +182,82 @@ def test_backprop_trick_one_layer_does_not_require_grads():
     optimizer1 = torch.optim.Adam(net1_param_group, lr=0.01)
     optimizer2 = MotherOptimizer(net2_param_group, torch.optim.Adam, lr=0.01)
     consistency_check(net1, net2, optimizer1, optimizer2, (5, 50), (5, 1))
+
+
+def backprop_trick_opt_no_grad_clip(optim_cls):
+    model_name: str = "facebook/opt-125m"
+    dataset_name = "GAIR/lima"
+    initial_lr = 1e+1
+
+    ds = load_dataset(dataset_name, "plain_text")
+    train_ds = Dataset.from_dict(ds['train'][0:30])
+    model_1 = AutoModelForCausalLM.from_pretrained(model_name)
+    model_2 = AutoModelForCausalLM.from_pretrained(model_name)
+    model_3 = AutoModelForCausalLM.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+    for i, (p1, p2) in enumerate(zip(model_1.parameters(), model_2.parameters())):
+        assert (p1==p2).all()
+
+
+    optimizer_1 = optim_cls(model_1.parameters(), lr=initial_lr)
+    lr_scheduler_1 = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_1, T_max=10)
+
+    optimizer_2 = MotherOptimizer(
+        model_2.parameters(),
+        optim_cls,
+        lr=initial_lr,
+    )
+    for param_group in optimizer_2.param_groups:
+        param_group["initial_lr"] = initial_lr  # Needed for lr scheduler
+    lr_scheduler_2 = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_2, T_max=10)
+
+    training_args = TrainingArguments(
+        do_eval=False,
+        output_dir=".",
+        num_train_epochs=1,
+        full_determinism=True,
+        use_cpu=True,
+        max_grad_norm=None,    # It is normalized over all parameters!  https://pytorch.org/docs/stable/generated/torch.nn.utils.clip_grad_norm_.html
+    )
+
+    trainer_1 = SFTTrainer(
+        model=model_1,
+        tokenizer=tokenizer,
+        args=training_args,
+        dataset_text_field="conversations",
+        train_dataset=train_ds,
+        max_seq_length=128,
+        optimizers=(optimizer_1, lr_scheduler_1),  # If backprop_trick is False, this is set to (None, None) by the factory...
+    )
+    trainer_1.train()
+
+    trainer_2 = SFTTrainer(
+        model=model_2,
+        tokenizer=tokenizer,
+        args=training_args,
+        dataset_text_field="conversations",
+        train_dataset=train_ds,
+        max_seq_length=128,
+        optimizers=(optimizer_2, lr_scheduler_2),  # If backprop_trick is False, this is set to (None, None) by the factory...
+    )
+    trainer_2.train()   # So the error happens in here....
+
+
+
+    ##############################################
+    # Test: Are the two trained models the same? #
+    ##############################################
+    for i, (p1, p2) in enumerate(zip(model_1.parameters(), model_2.parameters())):
+        assert torch.equal(p1, p2), f"Parameter {i} is not equal!"
+
+    #######################################################
+    # Test: Are we sure the models were actually trained? #
+    #######################################################
+    for i, (p1, p3) in enumerate(zip(model_1.parameters(), model_3.parameters())):
+        assert not torch.equal(p1, p3), f"Parameter {i} is equal when it shouldn't be!"
+
+
+def test_backprop_trick_opt_no_grad_clip():
+    backprop_trick_opt_no_grad_clip(torch.optim.SGD)
+    backprop_trick_opt_no_grad_clip(torch.optim.AdamW)
