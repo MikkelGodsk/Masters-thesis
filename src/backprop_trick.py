@@ -258,6 +258,9 @@ class MotherOptimizer(torch.optim.Optimizer):
         # Compiles a state dict. (https://pytorch.org/docs/stable/generated/torch.optim.Optimizer.state_dict.html). Written by Copilot
         return {"child_optimizers": [optimizer.state_dict() for optimizer in self.child_optimizers]}
 
+    def _optimizer_step_code(self): 
+        # With assistance from ChatGPT to understand what pybind will expect in https://github.com/pytorch/pytorch/blob/77830d509fcae41be37f5b3a2fa05faabc778e29/torch/csrc/autograd/profiler_python.cpp#L85 
+        pass
 
 
 """
