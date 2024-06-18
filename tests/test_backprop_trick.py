@@ -190,7 +190,7 @@ def backprop_trick_opt_no_grad_clip(optim_cls):
     initial_lr = 1e-1
 
     ds = load_dataset(dataset_name, "plain_text")
-    train_ds = Dataset.from_dict(ds['train'][0:10])
+    train_ds = Dataset.from_dict(ds['train'][0:25])
     model_1 = AutoModelForCausalLM.from_pretrained(model_name)
     model_2 = AutoModelForCausalLM.from_pretrained(model_name)
     model_3 = AutoModelForCausalLM.from_pretrained(model_name)
