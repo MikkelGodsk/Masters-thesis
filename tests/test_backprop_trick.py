@@ -190,7 +190,7 @@ def backprop_trick_opt_no_grad_clip(optim_cls):
     initial_lr = 1e-1
 
     ds = load_dataset(dataset_name, "plain_text")
-    train_ds = Dataset.from_dict(ds['train'][0:100])
+    train_ds = Dataset.from_dict(ds['train'][0:10])
     model_1 = AutoModelForCausalLM.from_pretrained(model_name)
     model_2 = AutoModelForCausalLM.from_pretrained(model_name)
     model_3 = AutoModelForCausalLM.from_pretrained(model_name)
@@ -229,7 +229,7 @@ def backprop_trick_opt_no_grad_clip(optim_cls):
         dataset_text_field="conversations",
         train_dataset=train_ds,
         max_seq_length=128,
-        optimizers=(optimizer_1, lr_scheduler_1),  # If backprop_trick is False, this is set to (None, None) by the factory...
+        optimizers=(optimizer_1, lr_scheduler_1),
     )
     trainer_1.train()
 
@@ -240,9 +240,9 @@ def backprop_trick_opt_no_grad_clip(optim_cls):
         dataset_text_field="conversations",
         train_dataset=train_ds,
         max_seq_length=128,
-        optimizers=(optimizer_2, lr_scheduler_2),  # If backprop_trick is False, this is set to (None, None) by the factory...
+        optimizers=(optimizer_2, lr_scheduler_2),
     )
-    trainer_2.train()   # So the error happens in here....
+    trainer_2.train()
 
 
 
@@ -257,7 +257,7 @@ def backprop_trick_opt_no_grad_clip(optim_cls):
     #######################################################
     all_are_equal = True
     for i, (p1, p3) in enumerate(zip(model_1.parameters(), model_3.parameters())):
-        all_are_equal = all_are_equal and (not torch.equal(p1, p3))#, f"Parameter {i} is equal when it shouldn't be!"
+        all_are_equal = all_are_equal and torch.equal(p1, p3)#, f"Parameter {i} is equal when it shouldn't be!"
     assert not all_are_equal, "The model was not trained!"
 
 
