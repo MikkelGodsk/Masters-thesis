@@ -44,7 +44,7 @@ cd $HOME/msc/src
 
 #export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
-python finetune.py --model_name "meta-llama/Llama-2-7b-hf" --test True --test_batch_size 16 --profile True --backprop_trick True --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer sgd --use_lora False --use_quantization False
-python finetune.py --model_name "meta-llama/Llama-2-7b-hf" --test True --test_batch_size 16 --profile True --backprop_trick False --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer adamw_torch --use_lora True --use_quantization True
-python finetune.py --model_name "meta-llama/Llama-2-7b-hf" --test True --test_batch_size 16 --profile True --backprop_trick False --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer sgd --use_lora True --use_quantization True
-python finetune.py --model_name "meta-llama/Llama-2-7b-hf" --test True --test_batch_size 16 --profile True --backprop_trick False --num_epochs 1 --max_seq_length 256 --no_eval True --optimizer sgd --use_lora False --use_quantization False
+python finetune.py --model_name "meta-llama/Llama-2-7b-hf" --test True --test_batch_size 16 --profile True --backprop_trick True --num_epochs 1 --max_seq_length 1024 --no_eval True --optimizer sgd --use_lora False --use_quantization False
+python finetune.py --model_name "meta-llama/Llama-2-7b-hf" --test True --test_batch_size 16 --profile True --backprop_trick False --num_epochs 1 --max_seq_length 1024 --no_eval True --optimizer adamw_torch --use_lora True --use_quantization True
+python finetune.py --model_name "meta-llama/Llama-2-7b-hf" --test True --test_batch_size 16 --profile True --backprop_trick False --num_epochs 1 --max_seq_length 1024 --no_eval True --optimizer sgd --use_lora True --use_quantization True
+python finetune.py --model_name "meta-llama/Llama-2-7b-hf" --test True --test_batch_size 16 --profile True --backprop_trick False --num_epochs 1 --max_seq_length 1024 --no_eval True --optimizer sgd --use_lora False --use_quantization False
