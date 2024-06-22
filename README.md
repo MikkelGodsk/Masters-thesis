@@ -38,4 +38,4 @@ To download the datasets from "The Geometry of Truth", run `git clone https://gi
 Then proceed as follows:
 - For the first experiment, you only need to put the datasets in a folder "Detection-datasets" in your Google drive. To run the experiment, run the file "ProbeVsModel.ipynb" on the "Notebooks" folder.
 - For the second experiment, you need to put the datasets in a folder "Detection-datasets" and compute the activations using the second part of "Detection_dataset_preparation_+_compute_activations.ipynb". Then you can run "LinearVsNonlinearProbe.ipynb".
-- The third experiment was run at DTU HPC. Here you need to put the dataset in a folder "ITI-datasets" and run "New_Inference_Time_Intervention_generalization_experiment.ipynb"
+- The third experiment was run at DTU HPC. Here you need to put the dataset in a folder "ITI-datasets" and run the files from notebooks/iti_runs. The one in notebooks has a minor error.
