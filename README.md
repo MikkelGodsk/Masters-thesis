@@ -33,5 +33,5 @@ To run the experiments, use the following files:
 
 The files are named similarly for the llama-versions.
 
-### Concept guidance
+### Truth representation
 To download the dataset, run `git clone https://github.com/saprmarks/geometry-of-truth.git` in the `src` directory.
